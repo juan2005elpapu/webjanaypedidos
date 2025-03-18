@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro | Janay Pedidos</title>
-</head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+{% extends "base.html" %} 
+{% block title %}Registro | Janay Pedidos{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-center min-h-screen">
     <div class="max-w-md w-full p-6 bg-white rounded-lg shadow-lg">
         <div class="flex justify-center mb-8">
             <h1 class="text-2xl font-bold text-gray-800">Crear cuenta</h1>
@@ -39,11 +36,11 @@
         <div class="text-center mt-4">
             <p class="text-sm text-gray-600">
                 ¿Ya tienes cuenta? 
-                <a href="{% url 'login' %}" class="font-medium text-indigo-600 hover:text-indigo-500">
+                <a href="{% url 'login' %}" class="font-medium text-orange-400 hover:text-orange-600">
                     Inicia sesión
                 </a>
             </p>
         </div>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

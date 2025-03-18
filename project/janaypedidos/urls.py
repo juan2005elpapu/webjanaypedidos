@@ -16,10 +16,11 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("__reload__/", include("django_browser_reload.urls")),
-    path('', include('theme.urls')),
     path('accounts/', include('accounts.urls')),
+    path('__reload__/', include('django_browser_reload.urls')),
+    path('', RedirectView.as_view(pattern_name='login'), name='home'),
 ]
