@@ -2,26 +2,23 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 
-# Definimos una clase de estilo común para los campos
-INPUT_CLASSES = 'mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm'
-
 class CustomUserCreationForm(UserCreationForm):
     username = forms.CharField(
         label="Nombre de usuario",
-        widget=forms.TextInput(attrs={'class': INPUT_CLASSES})
+        widget=forms.TextInput(attrs={'class': "input-field"})
     )
     email = forms.EmailField(
         required=True,
         label="Correo electrónico",
-        widget=forms.EmailInput(attrs={'class': INPUT_CLASSES})
+        widget=forms.EmailInput(attrs={'class': "input-field"})
     )
     password1 = forms.CharField(
         label="Contraseña",
-        widget=forms.PasswordInput(attrs={'class': INPUT_CLASSES})
+        widget=forms.PasswordInput(attrs={'class': "input-field"})
     )
     password2 = forms.CharField(
         label="Confirmar contraseña",
-        widget=forms.PasswordInput(attrs={'class': INPUT_CLASSES})
+        widget=forms.PasswordInput(attrs={'class': "input-field"})
     )
     
     class Meta:
@@ -45,11 +42,11 @@ class CustomUserCreationForm(UserCreationForm):
 class CustomAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
         label="Usuario o Email",
-        widget=forms.TextInput(attrs={'class': INPUT_CLASSES})
+        widget=forms.TextInput(attrs={'class': "input-field"})
     )
     password = forms.CharField(
         label="Contraseña",
-        widget=forms.PasswordInput(attrs={'class': INPUT_CLASSES})
+        widget=forms.PasswordInput(attrs={'class': "input-field"})
     )
     
     error_messages = {
