@@ -17,11 +17,17 @@
                         {{ field.label }}
                     </label>
                     <div class="mt-1">
-                        {{ field.errors }}
+                        <!-- Cambiamos los estilos de errores para que sean más visibles -->
+                        {% if field.errors %}
+                            <div class="text-orange-400 text-sm mb-1">
+                                {{ field.errors }}
+                            </div>
+                        {% endif %}
                         {{ field }}
                     </div>
                     {% if field.help_text %}
-                        <p class="text-xs text-gray-500">{{ field.help_text|safe }}</p>
+                        <!-- Cambiando el color del texto de ayuda de text-gray-500 a text-gray-300 -->
+                        <p class="text-xs text-gray-300">{{ field.help_text|safe }}</p>
                     {% endif %}
                 </div>
             {% endfor %}

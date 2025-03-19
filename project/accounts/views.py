@@ -7,6 +7,8 @@ from .forms import CustomUserCreationForm, CustomAuthenticationForm
 class CustomLoginView(LoginView):
     template_name = 'accounts/login.html'
     form_class = CustomAuthenticationForm
+    # Redirigir al dashboard después del login
+    next_page = reverse_lazy('core:home')
 
 class CustomSignUpView(CreateView):
     form_class = CustomUserCreationForm

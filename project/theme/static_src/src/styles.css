@@ -7,11 +7,16 @@
   }
   
   .btn-secondary {
-    @apply py-2 px-4 bg-gray-200 text-gray-800 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors;
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200
+    ;
   }
   
   .input-field {
     @apply mt-1 block w-full rounded-md border-transparent bg-gray-700 shadow-sm hover:border-white hover:ring-white focus:border-orange-500 focus:ring-orange-500 sm:text-sm text-white transition-all duration-300 ease-in-out;
+  }
+
+  .btn-navbar {
+    @apply text-white hover:bg-orange-700 block px-3 py-2 rounded-md text-base font-medium;
   }
 }
 /* Estilos para el icono de mostrar contraseña */
