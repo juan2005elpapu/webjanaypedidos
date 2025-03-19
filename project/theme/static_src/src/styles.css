@@ -3,7 +3,7 @@
 /* Define tus componentes personalizados aquí */
 @layer components {
   .btn-primary {
-    @apply w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500;
+    @apply w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-white hover:bg-orange-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 hover:text-white transition-all duration-300 ease-in-out;
   }
   
   .btn-secondary {
@@ -11,7 +11,12 @@
   }
   
   .input-field {
-    @apply mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm;
+    @apply mt-1 block w-full rounded-md border-transparent bg-gray-700 shadow-sm hover:border-white hover:ring-white focus:border-orange-500 focus:ring-orange-500 sm:text-sm text-white transition-all duration-300 ease-in-out;
   }
+}
+/* Estilos para el icono de mostrar contraseña */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  filter: invert(100%) brightness(100%);
 }
 @tailwind utilities;
