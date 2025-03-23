@@ -6,7 +6,11 @@
 
 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
     <!-- Tarjeta para Crear Pedido -->
-    <div class="bg-white overflow-hidden shadow-md rounded-lg">
+    <div class="bg-white overflow-hidden shadow-lg rounded-lg
+                hover:shadow-xl hover:scale-105 hover:border-orange-500 hover:border-2
+                focus-within:ring-2 focus-within:ring-orange-500 
+                transition-all duration-300 ease-in-out
+                transform">
         <div class="px-4 py-5 sm:p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-orange-500 rounded-md p-3">
@@ -32,7 +36,11 @@
     </div>
 
     <!-- Tarjeta para Ver Historial -->
-    <div class="bg-white overflow-hidden shadow-md rounded-lg">
+    <div class="bg-white overflow-hidden shadow-lg rounded-lg
+                hover:shadow-xl hover:scale-105 hover:border-orange-500 hover:border-2
+                focus-within:ring-2 focus-within:ring-orange-500 
+                transition-all duration-300 ease-in-out 
+                transform">
         <div class="px-4 py-5 sm:p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-orange-500 rounded-md p-3">
@@ -58,7 +66,11 @@
     </div>
 
     <!-- Tarjeta para Productos -->
-    <div class="bg-white overflow-hidden shadow-md rounded-lg">
+    <div class="bg-white overflow-hidden shadow-lg rounded-lg
+                hover:shadow-xl hover:scale-105 hover:border-orange-500 hover:border-2
+                focus-within:ring-2 focus-within:ring-orange-500 
+                transition-all duration-300 ease-in-out 
+                transform">
         <div class="px-4 py-5 sm:p-6">
             <div class="flex items-center">
                 <div class="flex-shrink-0 bg-orange-500 rounded-md p-3">
@@ -76,7 +88,7 @@
                 </div>
             </div>
             <div class="mt-5">
-                <a href="#" class="btn-secondary">
+                <a href="{% url 'products:list' %}" class="btn-secondary">
                     Ver Productos
                 </a>
             </div>
