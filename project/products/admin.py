@@ -10,41 +10,6 @@ class ProductForm(forms.ModelForm):
         model = Product
         fields = '__all__'
 
-    def clean_image(self):
-        image = self.cleaned_data.get('image')
-        print(f"DEBUG FORM - Valor inicial en clean_image: {image}, tipo: {type(image)}")
-        
-        # Si se marcó "Clear" (valor False)
-        if image is False:
-            print("DEBUG FORM - Se marcó Clear, eliminando imagen")
-            # Si hay instancia y tiene imagen actual, la eliminamos explícitamente
-            if self.instance and self.instance.pk and hasattr(self.instance, 'image') and self.instance.image:
-                try:
-                    # Guardamos la ruta para eliminarla después
-                    old_path = self.instance.image.path
-                    # Establecemos None para que Django sepa que debe eliminar la referencia
-                    self.instance.image = None
-                    # Si el archivo existe físicamente, lo eliminamos
-                    import os
-                    if os.path.isfile(old_path):
-                        os.remove(old_path)
-                        print(f"DEBUG FORM - Archivo físico eliminado: {old_path}")
-                except Exception as e:
-                    print(f"ERROR al eliminar archivo en clean_image: {e}")
-            return None  # Retornamos None para continuar con el proceso normal
-        
-        # Si el campo está vacío (sin marcar Clear)
-        if image is None or image == '':
-            return None
-        
-        # Si el usuario subió una imagen nueva
-        if isinstance(image, UploadedFile):
-            validate_image_format(image)
-            return image
-        
-        # Si no hay cambios (mantener la imagen existente)
-        return self.instance.image if hasattr(self.instance, 'image') else None
-
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
