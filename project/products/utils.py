@@ -32,10 +32,8 @@ def convert_to_webp(image_field):
     if not image_field or not hasattr(image_field, 'file') or not image_field.file:
         return None
     
-    # Obtener la extensión original del archivo
     img_format = os.path.splitext(image_field.name)[1].lower()
     
-    # Si ya es WebP, no hacer nada
     if img_format == '.webp':
         return None
     
@@ -43,7 +41,6 @@ def convert_to_webp(image_field):
         # Asegurarse de que el archivo está en la posición inicial
         image_field.file.seek(0)
         
-        # Abrir la imagen con PIL
         img = Image.open(image_field)
         
         # Convertir imagen a RGB si es necesario
@@ -57,14 +54,11 @@ def convert_to_webp(image_field):
         # Crear un buffer para guardar la imagen convertida
         buffer = BytesIO()
         
-        # Guardar como WebP con calidad del 85%
         img.save(buffer, format='WEBP', quality=90, optimize=True)
         buffer.seek(0)
         
-        # Crear un nuevo nombre para el archivo
         new_name = os.path.splitext(os.path.basename(image_field.name))[0] + '.webp'
         
-        # Devolver la versión WebP
         return ContentFile(buffer.getvalue(), name=new_name)
     except Exception:
         # Si hay un error, dejamos la imagen original

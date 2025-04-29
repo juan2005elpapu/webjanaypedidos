@@ -86,13 +86,10 @@ class ProductAdmin(admin.ModelAdmin):
         """
         # Si el formulario tenía una imagen marcada para eliminar (Clear)
         if 'image' in form.cleaned_data and form.cleaned_data['image'] is False:
-            # Asegurarnos de que el objeto tenga image=None antes de guardarlo
             obj.image = None
         
-        # Guardar el modelo como normalmente se haría
         super().save_model(request, obj, form, change)
         
         # Si la imagen se eliminó, asegurarnos de que se guarde con None
         if 'image' in form.cleaned_data and form.cleaned_data['image'] is False:
-            # Esto asegura que después de guardar, no intentemos acceder a la imagen eliminada
             obj.image = None

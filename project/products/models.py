@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from .utils import convert_to_webp
-from django.core.files.uploadedfile import UploadedFile  # Añadir esta importación
+from django.core.files.uploadedfile import UploadedFile  
 import os 
 from django.db.models.signals import pre_save, post_delete
 from django.dispatch import receiver
@@ -63,14 +63,11 @@ class Product(models.Model):
             super().save(*args, **kwargs)
             return
         
-        # Verificar si necesita conversión a WebP
         needs_conversion = self._needs_webp_conversion()
         
-        # Convertir a WebP si es necesario
         if needs_conversion:
             self._convert_to_webp()
 
-        # Guardar el modelo
         super().save(*args, **kwargs)
 
     def _needs_webp_conversion(self):
@@ -105,7 +102,7 @@ class Product(models.Model):
 def delete_old_image(sender, instance, **kwargs):
     """Elimina la imagen anterior si se reemplaza o elimina"""
     if not instance.pk:
-        return  # Es un objeto nuevo, no hay que borrar nada
+        return  
     
     try:
         old_product = Product.objects.get(pk=instance.pk)
@@ -118,7 +115,6 @@ def delete_old_image(sender, instance, **kwargs):
                 if os.path.isfile(file_path):
                     os.remove(file_path)
     except Exception as e:
-        # Al menos registra el error para facilitar la depuración
         print(f"Error al eliminar imagen anterior: {e}")
 
 @receiver(post_delete, sender=Product)
