@@ -58,7 +58,7 @@ def convert_to_webp(image_field):
         buffer = BytesIO()
         
         # Guardar como WebP con calidad del 85%
-        img.save(buffer, format='WEBP', quality=85, optimize=True)
+        img.save(buffer, format='WEBP', quality=90, optimize=True)
         buffer.seek(0)
         
         # Crear un nuevo nombre para el archivo

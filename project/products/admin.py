@@ -9,6 +9,34 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = '__all__'
+        
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        
+        # Si se marcó "Clear"
+        if image is False:
+            if self.instance and self.instance.pk and hasattr(self.instance, 'image') and self.instance.image:
+                try:
+                    old_path = self.instance.image.path
+                    self.instance.image = None
+                    import os
+                    if os.path.isfile(old_path):
+                        os.remove(old_path)
+                except Exception:
+                    pass
+            return None
+        
+        # Si el campo está vacío
+        if image is None or image == '':
+            return None
+        
+        # Si el usuario subió una imagen nueva
+        if isinstance(image, UploadedFile):
+            validate_image_format(image)
+            return image
+        
+        # Mantener imagen existente
+        return self.instance.image if hasattr(self.instance, 'image') else None
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
