@@ -119,13 +119,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'es-es'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Bogota'
 
 USE_I18N = True
 
@@ -152,3 +151,50 @@ AUTHENTICATION_BACKENDS = [
 # Configuración para archivos multimedia
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Configuración de Unfold
+UNFOLD = {
+    # Branding y apariencia
+    "SITE_TITLE": "Janay Pedidos",
+    "SITE_HEADER": "Administración Janay",
+    "SITE_SUBHEADER": "Panel de Control",
+    
+    # Colores - Paleta Naranja
+    "COLORS": {
+        "primary": {
+            "50": "255 247 237",  # Naranja muy claro
+            "100": "255 237 213", 
+            "200": "254 215 170",
+            "300": "253 186 116", 
+            "400": "251 146 60",  
+            "500": "249 115 22",  # Naranja principal - coincide con tu frontend
+            "600": "234 88 12",   
+            "700": "194 65 12",   
+            "800": "154 52 18",   
+            "900": "124 45 18",   
+            "950": "67 20 7",     
+        }
+    },
+    
+    # Personalización de la barra lateral
+    "SIDEBAR": {
+        "show_search": True,
+        "show_all_applications": True,
+    },
+    
+    # Personalización de UI
+    "ENVIRONMENT": "Desarrollo",
+    "ENVIRONMENT_COLOR": "#f97316",  # Naranja
+    "BORDER_RADIUS": "6px",
+    "DARK_MODE": True,  # Activar modo oscuro
+    
+    # Personalización de textos
+    "CUSTOM_TEXTS": {
+        "action_submit": "Guardar cambios",
+        "action_add_another": "Guardar y añadir otro",
+        "action_continue": "Guardar y continuar editando",
+    },
+    
+    # Agregar esta línea
+    #"STYLES": ["css/unfold_custom.css"],
+}
