@@ -183,8 +183,7 @@ UNFOLD = {
     },
     
     # Personalización de UI
-    "ENVIRONMENT": "Desarrollo",
-    "ENVIRONMENT_COLOR": "#f97316",  # Naranja
+    "ENVIRONMENT": ["production", "primary"],  # Cambia a "development" si es necesario
     "BORDER_RADIUS": "6px",
     "DARK_MODE": True,  # Activar modo oscuro
     
