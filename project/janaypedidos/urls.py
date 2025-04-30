@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
-from core.views import WelcomeView  # Importar WelcomeView directamente
+from core.views import WelcomeView  
 from django.conf import settings
 from django.conf.urls.static import static
 
@@ -26,10 +26,8 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('__reload__/', include('django_browser_reload.urls')),
     
-    # Mostrar welcome directamente en la raíz en lugar de redireccionar
     path('', WelcomeView.as_view(), name='welcome'),
     
-    # Incluimos las URLs de core
     path('dashboard/', include('core.urls')),
     path('products/', include('products.urls')),
 ]

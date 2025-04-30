@@ -2,6 +2,7 @@ from django import forms
 from django.core.files.uploadedfile import UploadedFile
 from django.utils.html import format_html
 from django.contrib import admin
+from unfold.admin import ModelAdmin
 from .models import Product, Category
 from .utils import validate_image_format
 
@@ -39,13 +40,13 @@ class ProductForm(forms.ModelForm):
         return self.instance.image if hasattr(self.instance, 'image') else None
 
 @admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
+class CategoryAdmin(ModelAdmin):
     list_display = ('name', 'slug')
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ('name',)
 
 @admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
+class ProductAdmin(ModelAdmin):
     form = ProductForm
     list_display = ('name', 'category', 'price', 'weight', 'is_available', 'display_image')
     list_filter = ('category', 'is_available', 'created_at')
