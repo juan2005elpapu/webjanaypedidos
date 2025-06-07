@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
-
+from django.templatetags.static import static
+from django.urls import reverse_lazy
+from django.utils.translation import gettext_lazy as _
 from env import secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -132,9 +134,15 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
+STATIC_URL = '/static/'
 
-STATIC_URL = 'static/'
+# Configuración completa de archivos estáticos
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -158,7 +166,18 @@ UNFOLD = {
     "SITE_TITLE": "Janay Pedidos",
     "SITE_HEADER": "Administración Janay",
     "SITE_SUBHEADER": "Panel de Control",
-    
+    "SITE_FAVICONS": [
+        {
+            "rel": "icon",
+            "sizes": "32x32",
+            "type": "image/svg+xml",
+            "href": lambda request: static("images/coffee_light.svg"),
+        },
+    ],
+    "LOGIN": {
+        "image": lambda request: static("images/coffe_beans.jpg"),
+    },
+
     # Colores - Paleta Naranja
     "COLORS": {
         "primary": {
@@ -173,17 +192,66 @@ UNFOLD = {
             "800": "154 52 18",   
             "900": "124 45 18",   
             "950": "67 20 7",     
+        },
+        # Colores base - De blanco a negro
+        "base": {
+            "50": "220 220 230",   # color general navbar y cuadros
+            "100": "253 186 116",  # Blanco grisáceo caja de seleccion del navbar
+            "200": "10 10 10",  # Gris claro lineas de separacion
+            "300": "200 200 200",  # negro claro blackmode color letras en light color cuadrados
+            "400": "253 186 116",  # naranja principal - bien 100%
+            "500": "234 88 12",  # GRIS MEDIO (mitad)
+            "600": "50 50 50",     # Gris oscuro
+            "700": "150 150 150",     # Gris muy oscuro
+            "800": "100 100 100",     # Negro grisáceo
+            "900": "65 65 65",     # color principal en black mode
+            "950": "150 150 150",        # NEGRO PURO (final)
         }
-    },
-    
+        },
+        
     # Personalización de la barra lateral
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": True,
+        "navigation": [
+            {
+                "title": _("Users & groups"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Users"),
+                        "icon": "account_circle",
+                        "link": reverse_lazy("admin:auth_user_changelist")
+                    },
+                    {
+                        "title": _("Groups"),
+                        "icon": "group",
+                        "link": reverse_lazy("admin:auth_group_changelist")
+                    },
+                ]
+            },
+            {
+                "title": _("Products"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Categories"),
+                        "icon": "category",
+                        "link": reverse_lazy("admin:products_category_changelist")
+                        
+                    },
+                    {
+                        "title": _("Products"),
+                        "icon": "inventory",
+                        "link": reverse_lazy("admin:products_product_changelist")
+                    },
+                ]
+            }
+        ]
     },
     
     # Personalización de UI
-    "ENVIRONMENT": ["production", "primary"],  # Cambia a "development" si es necesario
+    "ENVIRONMENT": ["DESARROLLO", "primary"],  # Cambia a "development" si es necesario
     "BORDER_RADIUS": "6px",
     "DARK_MODE": True,  # Activar modo oscuro
     
@@ -193,7 +261,4 @@ UNFOLD = {
         "action_add_another": "Guardar y añadir otro",
         "action_continue": "Guardar y continuar editando",
     },
-    
-    # Agregar esta línea
-    #"STYLES": ["css/unfold_custom.css"],
 }
