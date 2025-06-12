@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
+from django.urls import reverse
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
@@ -163,10 +164,85 @@ def order_step2(request):
         messages.warning(request, "Primero debes completar la información básica.")
         return redirect('orders:step1')
     
+    if request.method == 'POST':
+        # Procesar selección de productos
+        selected_products = []
+        total_amount = Decimal('0.00')
+        errors = []
+        
+        # Obtener productos del formulario
+        for key, value in request.POST.items():
+            if key.startswith('product_') and value:
+                try:
+                    product_id = int(key.replace('product_', ''))
+                    quantity = int(value)
+                    
+                    if quantity > 0:
+                        product = get_object_or_404(Product, id=product_id, is_available=True)
+                        item_total = product.price * quantity
+                        
+                        selected_products.append({
+                            'product_id': product_id,
+                            'product_name': product.name,
+                            'product_price': float(product.price),
+                            'quantity': quantity,
+                            'total': float(item_total)
+                        })
+                        total_amount += item_total
+                        
+                except (ValueError, Product.DoesNotExist):
+                    continue
+        
+        if not selected_products:
+            errors.append("Debes seleccionar al menos un producto.")
+        
+        # Verificar monto mínimo
+        settings = BusinessSettings.get_settings()
+        if total_amount < settings.minimum_order_amount:
+            errors.append(f"El pedido mínimo es ${settings.minimum_order_amount:,.0f} COP. Tu pedido actual es ${total_amount:,.0f} COP.")
+        
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+        else:
+            # Guardar productos en la sesión
+            request.session['order_cart']['items'] = selected_products
+            request.session['order_cart']['total_amount'] = float(total_amount)
+            request.session.modified = True
+            
+            messages.success(request, "Productos seleccionados. Procede a confirmar tu pedido.")
+            return redirect('orders:step3')
+    
+    # Obtener productos y categorías
+    from products.models import Category
+    categories = Category.objects.all()  # Cambiado: removido is_active=True
+    products = Product.objects.filter(is_available=True).order_by('category', 'name')
+    
+    # Obtener productos ya seleccionados de la sesión
+    selected_items = cart_data.get('items', [])
+    selected_products_dict = {item['product_id']: item['quantity'] for item in selected_items}
+    
+    # Configuración de steps para el template base
+    all_steps = [
+        {'number': 1, 'title': 'Información Básica', 'short_title': 'Información'},
+        {'number': 2, 'title': 'Selección de Productos', 'short_title': 'Productos'},
+        {'number': 3, 'title': 'Confirmación y Pago', 'short_title': 'Confirmación'},
+    ]
+    
     context = {
+        'categories': categories,
+        'products': products,
+        'selected_products': selected_products_dict,
+        'settings': BusinessSettings.get_settings(),
+        
+        # Datos para el template base de steps
         'step_number': 2,
+        'current_step': 2,
         'step_title': 'Selección de Productos',
-        'step_description': 'Elige los productos para tu pedido'
+        'step_description': 'Elige los productos que deseas pedir',
+        'all_steps': all_steps,
+        'next_step_text': 'Confirmar Pedido',
+        'previous_step_url': reverse('orders:step1'),
     }
     
     return render(request, 'orders/step2.html', context)

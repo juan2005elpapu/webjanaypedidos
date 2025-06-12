@@ -319,6 +319,131 @@
   .input-field {
     @apply mt-1 block w-full rounded-md border-transparent bg-gray-700 shadow-sm hover:border-white hover:ring-white focus:border-orange-500 focus:ring-orange-500 sm:text-sm text-white transition-all duration-300 ease-in-out;
   }
+
+  /* NUEVOS COMPONENTES PARA STEP 2 */
+  
+  /* Contenedor de selección de productos */
+  .product-selection-container {
+    @apply space-y-6;
+  }
+
+  .category-section {
+    @apply space-y-4;
+  }
+
+  .category-header {
+    @apply text-lg font-semibold text-gray-900 border-b-2 border-orange-200 pb-2;
+  }
+
+  /* Cards de productos para selección */
+  .product-select-card {
+    @apply bg-white border border-gray-200 rounded-lg p-4 hover:border-orange-300 hover:shadow-md transition-all duration-200;
+  }
+
+  .product-select-layout {
+    @apply flex items-center space-x-4;
+  }
+
+  .product-select-image {
+    @apply w-16 h-16 rounded-lg overflow-hidden flex-shrink-0;
+  }
+
+  .product-select-image-img {
+    @apply w-full h-full object-cover;
+  }
+
+  .product-select-no-image {
+    @apply w-full h-full bg-gray-100 flex items-center justify-center;
+  }
+
+  .product-select-info {
+    @apply flex-1 min-w-0;
+  }
+
+  .product-select-name {
+    @apply text-sm font-medium text-gray-900 truncate;
+  }
+
+  .product-select-price {
+    @apply text-sm text-orange-600 font-semibold;
+  }
+
+  .product-select-description {
+    @apply text-xs text-gray-500 truncate;
+  }
+
+  .product-select-controls {
+    @apply flex items-center space-x-2 flex-shrink-0;
+  }
+
+  .quantity-input {
+    @apply w-16 text-center border border-gray-300 rounded px-2 py-1 text-sm focus:ring-orange-500 focus:border-orange-500;
+  }
+
+  .quantity-btn {
+    @apply w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-100 flex items-center justify-center text-gray-600 hover:text-orange-600 transition-colors duration-150;
+  }
+
+  /* Resumen del pedido */
+  .order-summary {
+    @apply bg-orange-50 border border-orange-200 rounded-lg p-4 sticky top-4;
+  }
+
+  .order-summary-title {
+    @apply text-lg font-semibold text-gray-900 mb-3;
+  }
+
+  .order-summary-item {
+    @apply flex justify-between items-center py-2 border-b border-orange-200 last:border-b-0;
+  }
+
+  .order-summary-item-name {
+    @apply text-sm text-gray-700 flex-1;
+  }
+
+  .order-summary-item-qty {
+    @apply text-sm text-gray-500 mx-2;
+  }
+
+  .order-summary-item-price {
+    @apply text-sm font-medium text-gray-900;
+  }
+
+  .order-summary-total {
+    @apply flex justify-between items-center pt-3 mt-3 border-t border-orange-300 text-lg font-bold;
+  }
+
+  .order-summary-total-label {
+    @apply text-gray-900;
+  }
+
+  .order-summary-total-amount {
+    @apply text-orange-600;
+  }
+
+  /* Estado sin productos seleccionados */
+  .no-products-selected {
+    @apply text-center py-8 text-gray-500;
+  }
+
+  /* Grid responsivo para step 2 */
+  .step2-grid {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+  }
+
+  .step2-products-section {
+    @apply lg:col-span-2;
+  }
+
+  .step2-summary-section {
+    @apply lg:col-span-1;
+  }
+
+  /* Productos grid dentro de categorías */
+  .category-products-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+  }
+
 }
 
 /* Clases que usan peer - fuera de @layer components */

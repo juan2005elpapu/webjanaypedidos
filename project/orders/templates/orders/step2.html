@@ -1,0 +1,219 @@
+{% extends "orders/base_step.html" %}
+{% load humanize %}
+
+{% block step_content %}
+<form method="post" id="step-form" class="p-4 md:p-6">
+    {% csrf_token %}
+    
+    <div class="step2-grid">
+        <!-- Sección de productos -->
+        <div class="step2-products-section">
+            <div class="product-selection-container">
+                {% regroup products by category as products_by_category %}
+                {% for category_group in products_by_category %}
+                    {% if category_group.list %}
+                        <div class="category-section">
+                            <h3 class="category-header">
+                                <span class="material-icons text-orange-600 mr-2 align-middle">category</span>
+                                {{ category_group.grouper.name }}
+                            </h3>
+                            
+                            <div class="category-products-grid">
+                                {% for product in category_group.list %}
+                                    <div class="product-select-card">
+                                        <div class="product-select-layout">
+                                            <!-- Imagen del producto -->
+                                            <div class="product-select-image">
+                                                {% if product.image %}
+                                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-select-image-img">
+                                                {% else %}
+                                                    <div class="product-select-no-image">
+                                                        <span class="material-icons text-gray-400 text-sm">bakery_dining</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Información del producto -->
+                                            <div class="product-select-info">
+                                                <h4 class="product-select-name">{{ product.name }}</h4>
+                                                <p class="product-select-price">${{ product.price|floatformat:0|intcomma }}</p>
+                                                {% if product.description %}
+                                                    <p class="product-select-description">{{ product.description|truncatewords:8 }}</p>
+                                                {% endif %}
+                                            </div>
+                                            
+                                            <!-- Controles de cantidad -->
+                                            <div class="product-select-controls">
+                                                <button type="button" class="quantity-btn" onclick="decreaseQuantity({{ product.id }})">
+                                                    <span class="material-icons text-xs">remove</span>
+                                                </button>
+                                                <input type="number" 
+                                                       name="product_{{ product.id }}" 
+                                                       id="product_{{ product.id }}"
+                                                       value="{% for item in selected_products.items %}{% if item.0 == product.id %}{{ item.1 }}{% endif %}{% endfor %}"
+                                                       min="0" 
+                                                       max="50"
+                                                       class="quantity-input"
+                                                       onchange="updateSummary()">
+                                                <button type="button" class="quantity-btn" onclick="increaseQuantity({{ product.id }})">
+                                                    <span class="material-icons text-xs">add</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Resumen del pedido -->
+        <div class="step2-summary-section">
+            <div class="order-summary">
+                <h3 class="order-summary-title">
+                    <span class="material-icons text-orange-600 mr-2 align-middle">shopping_cart</span>
+                    Resumen del Pedido
+                </h3>
+                
+                <div id="order-items">
+                    <div class="no-products-selected" id="no-products">
+                        <span class="material-icons text-gray-400 text-4xl mb-2">shopping_cart</span>
+                        <p>No has seleccionado productos</p>
+                    </div>
+                </div>
+                
+                <div class="order-summary-total" id="order-total" style="display: none;">
+                    <span class="order-summary-total-label">Total:</span>
+                    <span class="order-summary-total-amount" id="total-amount">$0</span>
+                </div>
+                
+                <!-- Información de entrega -->
+                <div class="mt-4 pt-4 border-t border-orange-300" id="delivery-info" style="display: none;">
+                    <div class="text-sm space-y-1">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Subtotal:</span>
+                            <span id="subtotal-amount">$0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Envío:</span>
+                            <span id="shipping-amount">Gratis</span>
+                        </div>
+                        <div class="flex justify-between font-semibold text-orange-600">
+                            <span>Total Final:</span>
+                            <span id="final-amount">$0</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Información importante -->
+                <div class="mt-4 pt-4 border-t border-orange-300">
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <p><strong>Pedido mínimo:</strong> ${{ settings.minimum_order_amount|floatformat:0|intcomma }}</p>
+                        <p><strong>Envío gratis desde:</strong> ${{ settings.free_delivery_threshold|floatformat:0|intcomma }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block step_js %}
+<script>
+// Datos de productos para JavaScript
+const products = {
+    {% for product in products %}
+    {{ product.id }}: {
+        name: '{{ product.name|escapejs }}',
+        price: {{ product.price }},
+        category: '{{ product.category.name|escapejs }}'
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+
+const settings = {
+    minimumOrder: {{ settings.minimum_order_amount }},
+    freeDeliveryThreshold: {{ settings.free_delivery_threshold }}
+};
+
+function increaseQuantity(productId) {
+    const input = document.getElementById(`product_${productId}`);
+    const currentValue = parseInt(input.value) || 0;
+    if (currentValue < 50) {
+        input.value = currentValue + 1;
+        updateSummary();
+    }
+}
+
+function decreaseQuantity(productId) {
+    const input = document.getElementById(`product_${productId}`);
+    const currentValue = parseInt(input.value) || 0;
+    if (currentValue > 0) {
+        input.value = currentValue - 1;
+        updateSummary();
+    }
+}
+
+function updateSummary() {
+    const orderItems = document.getElementById('order-items');
+    const noProducts = document.getElementById('no-products');
+    const orderTotal = document.getElementById('order-total');
+    const deliveryInfo = document.getElementById('delivery-info');
+    
+    let totalAmount = 0;
+    let hasItems = false;
+    let itemsHtml = '';
+    
+    // Recorrer todos los inputs de productos
+    Object.keys(products).forEach(productId => {
+        const input = document.getElementById(`product_${productId}`);
+        if (input) {
+            const quantity = parseInt(input.value) || 0;
+            
+            if (quantity > 0) {
+                hasItems = true;
+                const product = products[productId];
+                const itemTotal = product.price * quantity;
+                totalAmount += itemTotal;
+                
+                itemsHtml += `
+                    <div class="order-summary-item">
+                        <span class="order-summary-item-name">${product.name}</span>
+                        <span class="order-summary-item-qty">x${quantity}</span>
+                        <span class="order-summary-item-price">$${itemTotal.toLocaleString()}</span>
+                    </div>
+                `;
+            }
+        }
+    });
+    
+    if (hasItems) {
+        noProducts.style.display = 'none';
+        orderTotal.style.display = 'flex';
+        deliveryInfo.style.display = 'block';
+        orderItems.innerHTML = itemsHtml;
+        
+        // Calcular envío
+        const shippingCost = totalAmount >= settings.freeDeliveryThreshold ? 0 : 5000;
+        const finalTotal = totalAmount + shippingCost;
+        
+        document.getElementById('total-amount').textContent = `$${totalAmount.toLocaleString()}`;
+        document.getElementById('subtotal-amount').textContent = `$${totalAmount.toLocaleString()}`;
+        document.getElementById('shipping-amount').textContent = shippingCost === 0 ? 'Gratis' : `$${shippingCost.toLocaleString()}`;
+        document.getElementById('final-amount').textContent = `$${finalTotal.toLocaleString()}`;
+    } else {
+        noProducts.style.display = 'block';
+        orderTotal.style.display = 'none';
+        deliveryInfo.style.display = 'none';
+        orderItems.innerHTML = '<div class="no-products-selected"><span class="material-icons text-gray-400 text-4xl mb-2">shopping_cart</span><p>No has seleccionado productos</p></div>';
+    }
+}
+
+// Actualizar resumen al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    updateSummary();
+});
+</script>
+{% endblock %}
