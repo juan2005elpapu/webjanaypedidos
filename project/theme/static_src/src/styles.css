@@ -1,3 +1,5 @@
+/* @tailwind directive support */
+/* stylelint-disable at-rule-no-unknown */
 @tailwind base;
 @tailwind components;
 /* Define tus componentes personalizados aquí */

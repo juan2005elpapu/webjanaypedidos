@@ -166,6 +166,7 @@ UNFOLD = {
     "SITE_TITLE": "Janay Pedidos",
     "SITE_HEADER": "Administración Janay",
     "SITE_SUBHEADER": "Panel de Control",
+    "SITE_SYMBOL": "dashboard",
     "SITE_FAVICONS": [
         {
             "rel": "icon",
