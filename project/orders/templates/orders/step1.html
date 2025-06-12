@@ -8,37 +8,37 @@
     
     <!-- Tipo de entrega -->
     <div class="space-y-3">
-        <label class="text-base font-medium text-gray-900">Tipo de entrega</label>
+        <label class="form-label">Tipo de entrega</label>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
-            <label class="relative cursor-pointer">
+            <label class="radio-option">
                 <input type="radio" name="delivery_type" value="pickup" 
-                       class="sr-only peer" 
+                       class="radio-option-input peer" 
                        {% if order_info.delivery_type == 'pickup' or not order_info.delivery_type %}checked{% endif %}>
-                <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-orange-500 peer-checked:bg-orange-50 hover:border-orange-300 transition-all duration-200">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
+                <div class="radio-option-card peer-checked:border-orange-500 peer-checked:bg-orange-50">
+                    <div class="radio-option-content">
+                        <div class="radio-option-icon">
                             <span class="material-icons text-orange-600" style="font-size: 24px;">store</span>
                         </div>
-                        <div class="ml-3 min-w-0 flex-1">
-                            <div class="text-sm font-medium text-gray-900">Recoger en tienda</div>
-                            <div class="text-sm text-gray-500 truncate">{{ settings.address }}</div>
+                        <div class="radio-option-text">
+                            <div class="radio-option-title">Recoger en tienda</div>
+                            <div class="radio-option-description">{{ settings.address }}</div>
                         </div>
                     </div>
                 </div>
             </label>
 
-            <label class="relative cursor-pointer">
+            <label class="radio-option">
                 <input type="radio" name="delivery_type" value="delivery" 
-                       class="sr-only peer" 
+                       class="radio-option-input peer" 
                        {% if order_info.delivery_type == 'delivery' %}checked{% endif %}>
-                <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-orange-500 peer-checked:bg-orange-50 hover:border-orange-300 transition-all duration-200">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
+                <div class="radio-option-card peer-checked:border-orange-500 peer-checked:bg-orange-50">
+                    <div class="radio-option-content">
+                        <div class="radio-option-icon">
                             <span class="material-icons text-orange-600" style="font-size: 24px;">local_shipping</span>
                         </div>
-                        <div class="ml-3 min-w-0 flex-1">
-                            <div class="text-sm font-medium text-gray-900">Delivery</div>
-                            <div class="text-sm text-gray-500">Entrega a domicilio</div>
+                        <div class="radio-option-text">
+                            <div class="radio-option-title">Delivery</div>
+                            <div class="radio-option-description">Entrega a domicilio</div>
                         </div>
                     </div>
                 </div>
@@ -49,31 +49,31 @@
     <!-- Información del cliente -->
     <div class="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2">
         <div>
-            <label for="customer_name" class="block text-sm font-medium text-gray-700">
-                Nombre completo <span class="text-red-500">*</span>
+            <label for="customer_name" class="form-label">
+                Nombre completo <span class="form-label-required">*</span>
             </label>
             <input type="text" name="customer_name" id="customer_name" required
                    value="{{ order_info.customer_name|default:user.get_full_name }}"
-                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                   class="form-input">
         </div>
 
         <div>
-            <label for="customer_phone" class="block text-sm font-medium text-gray-700">
-                Teléfono <span class="text-red-500">*</span>
+            <label for="customer_phone" class="form-label">
+                Teléfono <span class="form-label-required">*</span>
             </label>
             <input type="tel" name="customer_phone" id="customer_phone" required
                    value="{{ order_info.customer_phone }}"
                    placeholder="+57 300 123 4567"
-                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                   class="form-input">
         </div>
 
         <div class="md:col-span-2">
-            <label for="customer_email" class="block text-sm font-medium text-gray-700">
+            <label for="customer_email" class="form-label">
                 Email (opcional)
             </label>
             <input type="email" name="customer_email" id="customer_email"
                    value="{{ order_info.customer_email|default:user.email }}"
-                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                   class="form-input">
         </div>
     </div>
 
@@ -84,40 +84,40 @@
             
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div class="md:col-span-2">
-                    <label for="delivery_address" class="block text-sm font-medium text-gray-700">
-                        Dirección completa <span class="text-red-500">*</span>
+                    <label for="delivery_address" class="form-label">
+                        Dirección completa <span class="form-label-required">*</span>
                     </label>
                     <textarea name="delivery_address" id="delivery_address" rows="2"
                               placeholder="Ej: Calle 123 #45-67, Apartamento 8B"
-                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">{{ order_info.delivery_address }}</textarea>
+                              class="form-textarea">{{ order_info.delivery_address }}</textarea>
                 </div>
 
                 <div>
-                    <label for="delivery_neighborhood" class="block text-sm font-medium text-gray-700">
+                    <label for="delivery_neighborhood" class="form-label">
                         Barrio
                     </label>
                     <input type="text" name="delivery_neighborhood" id="delivery_neighborhood"
                            value="{{ order_info.delivery_neighborhood }}"
                            placeholder="Ej: Centro, Norte, Sur"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                           class="form-input">
                 </div>
 
                 <div>
-                    <label for="delivery_city" class="block text-sm font-medium text-gray-700">
+                    <label for="delivery_city" class="form-label">
                         Ciudad
                     </label>
                     <input type="text" name="delivery_city" id="delivery_city"
                            value="{{ settings.city }}" readonly
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 text-sm">
+                           class="form-input bg-gray-50 text-gray-500">
                 </div>
 
                 <div class="md:col-span-2">
-                    <label for="delivery_references" class="block text-sm font-medium text-gray-700">
+                    <label for="delivery_references" class="form-label">
                         Referencias adicionales
                     </label>
                     <textarea name="delivery_references" id="delivery_references" rows="2"
                               placeholder="Ej: Casa de dos pisos, portón negro, frente al parque"
-                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">{{ order_info.delivery_references }}</textarea>
+                              class="form-textarea">{{ order_info.delivery_references }}</textarea>
                 </div>
             </div>
         </div>
@@ -126,11 +126,10 @@
     <!-- Fecha y hora -->
     <div class="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2">
         <div>
-            <label for="desired_date" class="block text-sm font-medium text-gray-700">
-                Fecha deseada <span class="text-red-500">*</span>
+            <label for="desired_date" class="form-label">
+                Fecha deseada <span class="form-label-required">*</span>
             </label>
-            <select name="desired_date" id="desired_date" required
-                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+            <select name="desired_date" id="desired_date" required class="form-select">
                 <option value="">Selecciona una fecha</option>
                 {% for date in available_dates %}
                     <option value="{{ date.value }}" 
@@ -146,11 +145,10 @@
         </div>
 
         <div>
-            <label for="desired_time" class="block text-sm font-medium text-gray-700">
-                Hora deseada <span class="text-red-500">*</span>
+            <label for="desired_time" class="form-label">
+                Hora deseada <span class="form-label-required">*</span>
             </label>
-            <select name="desired_time" id="desired_time" required
-                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+            <select name="desired_time" id="desired_time" required class="form-select">
                 <option value="">Selecciona una hora</option>
                 {% for slot in time_slots %}
                     <option value="{{ slot.value }}" 
@@ -166,14 +164,14 @@
     </div>
 
     <!-- Información importante -->
-    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-        <div class="flex">
-            <div class="flex-shrink-0">
+    <div class="info-box">
+        <div class="info-box-content">
+            <div class="info-box-icon">
                 <span class="material-icons text-blue-400">info</span>
             </div>
-            <div class="ml-3">
-                <h3 class="text-sm font-medium text-blue-800">Información importante</h3>
-                <div class="mt-2 text-sm text-blue-700">
+            <div class="info-box-text">
+                <h3 class="info-box-title">Información importante</h3>
+                <div class="info-box-description">
                     <ul class="list-disc pl-5 space-y-1">
                         <li>Pedido mínimo: ${{ settings.minimum_order_amount|floatformat:0|intcomma }} COP</li>
                         <li>Envío gratis desde: ${{ settings.free_delivery_threshold|floatformat:0|intcomma }} COP</li>

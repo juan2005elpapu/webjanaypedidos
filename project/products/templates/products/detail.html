@@ -4,54 +4,51 @@
 
 {% block main_content %}
 <div class="mb-6">
-    <a href="{% url 'products:list' %}" class="text-orange-600 hover:text-orange-800 flex items-center">
-        <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-        </svg>
+    <a href="{% url 'products:list' %}" class="btn-back">
+        <span class="material-icons h-5 w-5 mr-1">arrow_back</span>
         Volver a Productos
     </a>
 </div>
 
-<div class="bg-white rounded-lg shadow-lg overflow-hidden">
-    <div class="md:flex">
-        <div class="md:w-1/2">
+<div class="product-detail-container">
+    <div class="product-detail-layout">
+        <div class="product-detail-image-section">
             {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-80 object-cover">
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-detail-image">
             {% else %}
-                <div class="w-full h-80 bg-gray-200 flex items-center justify-center">
-                    <span class="text-gray-500">Sin imagen</span>
+                <div class="product-detail-no-image">
+                    <span class="product-card-no-image-text">Sin imagen</span>
                 </div>
             {% endif %}
         </div>
-        <div class="p-6 md:w-1/2">
-            <h1 class="text-2xl font-bold text-gray-900">{{ product.name }}</h1>
-            <div class="mt-2">
-                <span class="inline-block bg-orange-100 text-orange-800 px-2 py-1 text-xs rounded">{{ product.category.name }}</span>
+        <div class="product-detail-content">
+            <h1 class="product-detail-title">{{ product.name }}</h1>
+            <div class="product-detail-badges">
+                <span class="product-badge product-badge-category">{{ product.category.name }}</span>
                 {% if product.is_available %}
-                    <span class="inline-block bg-green-100 text-green-800 px-2 py-1 text-xs rounded ml-2">Disponible</span>
+                    <span class="product-badge product-badge-available">Disponible</span>
                 {% else %}
-                    <span class="inline-block bg-red-100 text-red-800 px-2 py-1 text-xs rounded ml-2">No disponible</span>
+                    <span class="product-badge product-badge-unavailable">No disponible</span>
                 {% endif %}
             </div>
-            <div class="mt-4">
-                <span class="text-3xl font-bold text-orange-600">${{ product.price|floatformat:2|intcomma }}</span>
+            <div class="product-detail-price">
+                <span class="product-price-main">${{ product.price|floatformat:2|intcomma }}</span>
                 {% if product.weight %}
-                    <span class="text-sm text-gray-500 ml-2">{{ product.weight }}g</span>
+                    <span class="product-weight">{{ product.weight }}g</span>
                 {% endif %}
             </div>
-            <div class="mt-4 text-gray-700">
+            <div class="product-description">
                 <p>{{ product.description }}</p>
             </div>
             
             {% if product.ingredients %}
-                <div class="mt-6">
-                    <h3 class="text-lg font-semibold">Ingredientes</h3>
-                    <p class="text-gray-700">{{ product.ingredients }}</p>
+                <div class="product-ingredients">
+                    <h3 class="product-ingredients-title">Ingredientes</h3>
+                    <p class="product-ingredients-text">{{ product.ingredients }}</p>
                 </div>
             {% endif %}
             
-            <!-- En la sección del botón de añadir al pedido -->
-            <div class="mt-8">
+            <div class="product-actions">
                 <button class="btn-secondary">
                     Añadir al Pedido
                 </button>

@@ -9,13 +9,13 @@
 </div>
 
 <!-- Filtros por categoría -->
-<div class="mb-8">
-    <div class="flex flex-wrap gap-2">
-        <a href="{% url 'products:list' %}" class="inline-block px-4 py-2 text-sm {% if not selected_category %}bg-orange-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full hover:bg-orange-600 hover:text-white transition">
+<div class="categories-filter-container">
+    <div class="categories-filter-grid">
+        <a href="{% url 'products:list' %}" class="category-filter {% if not selected_category %}category-filter-active{% else %}category-filter-inactive{% endif %}">
             Todos
         </a>
         {% for category in categories %}
-            <a href="{% url 'products:list' %}?category={{ category.slug }}" class="inline-block px-4 py-2 text-sm {% if selected_category == category.slug %}bg-orange-500 text-white{% else %}bg-gray-200 text-gray-700{% endif %} rounded-full hover:bg-orange-600 hover:text-white transition">
+            <a href="{% url 'products:list' %}?category={{ category.slug }}" class="category-filter {% if selected_category == category.slug %}category-filter-active{% else %}category-filter-inactive{% endif %}">
                 {{ category.name }}
             </a>
         {% endfor %}
@@ -23,27 +23,23 @@
 </div>
 
 <!-- Lista de productos -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<div class="products-grid">
     {% for product in products %}
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden 
-                    hover:shadow-xl hover:scale-105 hover:border-orange-500 hover:border-4
-                    focus-within:ring-4 focus-within:ring-orange-500 
-                    transition-all duration-300 ease-in-out
-                    transform">
-            <div class="h-48 overflow-hidden">
+        <div class="product-card">
+            <div class="product-card-image">
                 {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover">
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-card-image-container">
                 {% else %}
-                    <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span class="text-gray-500">Sin imagen</span>
+                    <div class="product-card-no-image">
+                        <span class="product-card-no-image-text">Sin imagen</span>
                     </div>
                 {% endif %}
             </div>
-            <div class="p-4">
-                <h3 class="text-lg font-semibold text-gray-900">{{ product.name }}</h3>
-                <p class="text-gray-600 text-sm">{{ product.category.name }}</p>
-                <div class="mt-2 flex justify-between items-center">
-                    <span class="text-orange-600 font-bold">${{ product.price|floatformat:2|intcomma }}</span>
+            <div class="product-card-content">
+                <h3 class="product-card-title">{{ product.name }}</h3>
+                <p class="product-card-category">{{ product.category.name }}</p>
+                <div class="product-card-footer">
+                    <span class="product-card-price">${{ product.price|floatformat:2|intcomma }}</span>
                     <a href="{% url 'products:detail' product.id %}" class="btn-secondary">
                         Ver detalles
                     </a>
@@ -51,8 +47,8 @@
             </div>
         </div>
     {% empty %}
-        <div class="col-span-full text-center py-8">
-            <p class="text-gray-500">No hay productos disponibles en esta categoría.</p>
+        <div class="empty-state">
+            <p class="empty-state-text">No hay productos disponibles en esta categoría.</p>
         </div>
     {% endfor %}
 </div>

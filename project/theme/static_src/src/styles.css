@@ -7,18 +7,327 @@
   }
   
   .btn-secondary {
-    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200
-    ;
-  }
-  
-  .input-field {
-    @apply mt-1 block w-full rounded-md border-transparent bg-gray-700 shadow-sm hover:border-white hover:ring-white focus:border-orange-500 focus:ring-orange-500 sm:text-sm text-white transition-all duration-300 ease-in-out;
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-orange-700 bg-orange-100 hover:bg-orange-200 transition-all duration-200 ease-in-out;
   }
 
   .btn-navbar {
     @apply text-white hover:bg-orange-700 block px-3 py-2 rounded-md text-base font-medium;
   }
+
+  /* COMPONENTES EXISTENTES */
+  
+  /* Cards principales del dashboard */
+  .dashboard-card {
+    @apply bg-white overflow-hidden shadow-lg rounded-lg hover:shadow-xl hover:scale-105 hover:border-orange-500 hover:border-2 focus-within:ring-2 focus-within:ring-orange-500 transition-all duration-300 ease-in-out transform;
+  }
+
+  .dashboard-card-content {
+    @apply px-4 py-5 sm:p-6;
+  }
+
+  .dashboard-card-icon {
+    @apply flex-shrink-0 bg-orange-500 rounded-md p-3;
+  }
+
+  .dashboard-card-text {
+    @apply ml-5 w-0 flex-1;
+  }
+
+  .dashboard-card-title {
+    @apply text-lg font-medium text-gray-900 truncate;
+  }
+
+  .dashboard-card-description {
+    @apply mt-1 text-sm text-gray-500;
+  }
+
+  /* Botones de navegación de steps */
+  .btn-step-navigation {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-black hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-300 ease-in-out;
+  }
+
+  .btn-step-cancel {
+    @apply inline-flex items-center justify-center px-4 py-2 border border-gray-400 shadow-sm text-sm font-medium rounded-md text-white bg-black hover:bg-white hover:text-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-300 ease-in-out;
+  }
+
+  .btn-step-continue {
+    @apply inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-300 ease-in-out;
+  }
+
+  /* Contenedores principales */
+  .main-container {
+    @apply max-w-4xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .content-card {
+    @apply bg-white shadow-lg rounded-lg overflow-hidden;
+  }
+
+  .content-header {
+    @apply bg-orange-50 px-4 py-4 md:px-6 border-b border-orange-100;
+  }
+
+  .content-title {
+    @apply text-xl md:text-2xl font-bold text-gray-900;
+  }
+
+  .content-description {
+    @apply text-sm text-gray-600 mt-1;
+  }
+
+  /* Inputs de formulario */
+  .form-input {
+    @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-gray-700;
+  }
+
+  .form-label-required {
+    @apply text-red-500;
+  }
+
+  .form-textarea {
+    @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm;
+  }
+
+  .form-select {
+    @apply mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm;
+  }
+
+  /* Contenedores informativos */
+  .info-box {
+    @apply bg-blue-50 border border-blue-200 rounded-md p-4;
+  }
+
+  .info-box-content {
+    @apply flex;
+  }
+
+  .info-box-icon {
+    @apply flex-shrink-0;
+  }
+
+  .info-box-text {
+    @apply ml-3;
+  }
+
+  .info-box-title {
+    @apply text-sm font-medium text-blue-800;
+  }
+
+  .info-box-description {
+    @apply mt-2 text-sm text-blue-700;
+  }
+
+  /* Opciones de radio personalizadas */
+  .radio-option {
+    @apply relative cursor-pointer;
+  }
+
+  .radio-option-input {
+    @apply sr-only;
+  }
+
+  .radio-option-content {
+    @apply flex items-center;
+  }
+
+  .radio-option-icon {
+    @apply flex-shrink-0;
+  }
+
+  .radio-option-text {
+    @apply ml-3 min-w-0 flex-1;
+  }
+
+  .radio-option-title {
+    @apply text-sm font-medium text-gray-900;
+  }
+
+  .radio-option-description {
+    @apply text-sm text-gray-500 truncate;
+  }
+
+  /* NUEVOS COMPONENTES PARA PRODUCTOS */
+
+  /* Cards de productos */
+  .product-card {
+    @apply bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl hover:scale-105 hover:border-orange-500 hover:border-4 focus-within:ring-4 focus-within:ring-orange-500 transition-all duration-300 ease-in-out transform;
+  }
+
+  .product-card-image {
+    @apply h-48 overflow-hidden;
+  }
+
+  .product-card-image-container {
+    @apply w-full h-full object-cover;
+  }
+
+  .product-card-no-image {
+    @apply w-full h-full bg-gray-200 flex items-center justify-center;
+  }
+
+  .product-card-no-image-text {
+    @apply text-gray-500;
+  }
+
+  .product-card-content {
+    @apply p-4;
+  }
+
+  .product-card-title {
+    @apply text-lg font-semibold text-gray-900;
+  }
+
+  .product-card-category {
+    @apply text-gray-600 text-sm;
+  }
+
+  .product-card-footer {
+    @apply mt-2 flex justify-between items-center;
+  }
+
+  .product-card-price {
+    @apply text-orange-600 font-bold;
+  }
+
+  /* Filtros de categoría */
+  .category-filter {
+    @apply inline-block px-4 py-2 text-sm rounded-full hover:bg-orange-600 hover:text-white transition;
+  }
+
+  .category-filter-active {
+    @apply bg-orange-500 text-white;
+  }
+
+  .category-filter-inactive {
+    @apply bg-gray-200 text-gray-700;
+  }
+
+  /* Detail de producto */
+  .product-detail-container {
+    @apply bg-white rounded-lg shadow-lg overflow-hidden;
+  }
+
+  .product-detail-layout {
+    @apply md:flex;
+  }
+
+  .product-detail-image-section {
+    @apply md:w-1/2;
+  }
+
+  .product-detail-image {
+    @apply w-full h-80 object-cover;
+  }
+
+  .product-detail-no-image {
+    @apply w-full h-80 bg-gray-200 flex items-center justify-center;
+  }
+
+  .product-detail-content {
+    @apply p-6 md:w-1/2;
+  }
+
+  .product-detail-title {
+    @apply text-2xl font-bold text-gray-900;
+  }
+
+  .product-detail-badges {
+    @apply mt-2;
+  }
+
+  .product-badge {
+    @apply inline-block px-2 py-1 text-xs rounded;
+  }
+
+  .product-badge-category {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  .product-badge-available {
+    @apply bg-green-100 text-green-800 ml-2;
+  }
+
+  .product-badge-unavailable {
+    @apply bg-red-100 text-red-800 ml-2;
+  }
+
+  .product-detail-price {
+    @apply mt-4;
+  }
+
+  .product-price-main {
+    @apply text-3xl font-bold text-orange-600;
+  }
+
+  .product-weight {
+    @apply text-sm text-gray-500 ml-2;
+  }
+
+  .product-description {
+    @apply mt-4 text-gray-700;
+  }
+
+  .product-ingredients {
+    @apply mt-6;
+  }
+
+  .product-ingredients-title {
+    @apply text-lg font-semibold;
+  }
+
+  .product-ingredients-text {
+    @apply text-gray-700;
+  }
+
+  .product-actions {
+    @apply mt-8;
+  }
+
+  /* Botón de navegación con Material Icons */
+  .btn-back {
+    @apply text-orange-600 hover:text-orange-800 flex items-center transition-colors duration-200;
+  }
+
+  /* Grids responsivos */
+  .products-grid {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6;
+  }
+
+  .categories-filter-container {
+    @apply mb-8;
+  }
+
+  .categories-filter-grid {
+    @apply flex flex-wrap gap-2;
+  }
+
+  /* Estado vacío */
+  .empty-state {
+    @apply col-span-full text-center py-8;
+  }
+
+  .empty-state-text {
+    @apply text-gray-500;
+  }
+
+  .input-field {
+    @apply mt-1 block w-full rounded-md border-transparent bg-gray-700 shadow-sm hover:border-white hover:ring-white focus:border-orange-500 focus:ring-orange-500 sm:text-sm text-white transition-all duration-300 ease-in-out;
+  }
 }
+
+/* Clases que usan peer - fuera de @layer components */
+.radio-option-card {
+  @apply p-4 border-2 border-gray-200 rounded-lg hover:border-orange-300 transition-all duration-200;
+}
+
+.radio-option-input:checked + .radio-option-card {
+  @apply border-orange-500 bg-orange-50;
+}
+
 /* Estilos para el icono de mostrar contraseña */
 input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
