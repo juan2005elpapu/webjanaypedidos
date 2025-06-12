@@ -1,254 +1,192 @@
-{% extends "core/base_dashboard.html" %}
+{% extends "orders/base_step.html" %}
 {% load humanize %}
-{% block title %}{{ step_title }} | Janay Pedidos{% endblock %}
 
-{% block main_content %}
-<!-- Indicador de pasos -->
-<div class="mb-8">
-    <nav aria-label="Progress">
-        <ol class="flex items-center justify-center space-x-12">
-            <li class="flex items-center">
-                <div class="relative flex items-center justify-center w-10 h-10 bg-orange-600 rounded-full ring-8 ring-orange-100">
-                    <span class="text-white text-sm font-medium">1</span>
+{% block step_content %}
+<!-- Formulario -->
+<form method="post" id="step-form" class="p-4 md:p-6 space-y-6">
+    {% csrf_token %}
+    
+    <!-- Tipo de entrega -->
+    <div class="space-y-3">
+        <label class="text-base font-medium text-gray-900">Tipo de entrega</label>
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <label class="relative cursor-pointer">
+                <input type="radio" name="delivery_type" value="pickup" 
+                       class="sr-only peer" 
+                       {% if order_info.delivery_type == 'pickup' or not order_info.delivery_type %}checked{% endif %}>
+                <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-orange-500 peer-checked:bg-orange-50 hover:border-orange-300 transition-all duration-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <span class="material-icons text-orange-600" style="font-size: 24px;">store</span>
+                        </div>
+                        <div class="ml-3 min-w-0 flex-1">
+                            <div class="text-sm font-medium text-gray-900">Recoger en tienda</div>
+                            <div class="text-sm text-gray-500 truncate">{{ settings.address }}</div>
+                        </div>
+                    </div>
                 </div>
-                <span class="ml-3 text-sm font-medium text-orange-600">Información</span>
-            </li>
-            <li class="flex items-center">
-                <div class="w-20 h-0.5 bg-gray-200"></div>
-                <div class="relative flex items-center justify-center w-10 h-10 bg-gray-200 rounded-full ring-8 ring-gray-50">
-                    <span class="text-gray-500 text-sm font-medium">2</span>
-                </div>
-                <span class="ml-3 text-sm font-medium text-gray-500">Productos</span>
-            </li>
-            <li class="flex items-center">
-                <div class="w-20 h-0.5 bg-gray-200"></div>
-                <div class="relative flex items-center justify-center w-10 h-10 bg-gray-200 rounded-full ring-8 ring-gray-50">
-                    <span class="text-gray-500 text-sm font-medium">3</span>
-                </div>
-                <span class="ml-3 text-sm font-medium text-gray-500">Confirmación</span>
-            </li>
-        </ol>
-    </nav>
-</div>
+            </label>
 
-<!-- Contenido principal -->
-<div class="max-w-3xl mx-auto">
-    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
-        <!-- Header -->
-        <div class="bg-orange-50 px-6 py-4 border-b border-orange-100">
-            <h1 class="text-2xl font-bold text-gray-900">{{ step_title }}</h1>
-            <p class="text-sm text-gray-600 mt-1">{{ step_description }}</p>
+            <label class="relative cursor-pointer">
+                <input type="radio" name="delivery_type" value="delivery" 
+                       class="sr-only peer" 
+                       {% if order_info.delivery_type == 'delivery' %}checked{% endif %}>
+                <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-orange-500 peer-checked:bg-orange-50 hover:border-orange-300 transition-all duration-200">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <span class="material-icons text-orange-600" style="font-size: 24px;">local_shipping</span>
+                        </div>
+                        <div class="ml-3 min-w-0 flex-1">
+                            <div class="text-sm font-medium text-gray-900">Delivery</div>
+                            <div class="text-sm text-gray-500">Entrega a domicilio</div>
+                        </div>
+                    </div>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <!-- Información del cliente -->
+    <div class="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2">
+        <div>
+            <label for="customer_name" class="block text-sm font-medium text-gray-700">
+                Nombre completo <span class="text-red-500">*</span>
+            </label>
+            <input type="text" name="customer_name" id="customer_name" required
+                   value="{{ order_info.customer_name|default:user.get_full_name }}"
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
         </div>
 
-        <!-- Formulario -->
-        <form method="post" class="p-6 space-y-6">
-            {% csrf_token %}
-            
-            <!-- Tipo de entrega -->
-            <div class="space-y-3">
-                <label class="text-base font-medium text-gray-900">Tipo de entrega</label>
-                <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <label class="relative cursor-pointer">
-                        <input type="radio" name="delivery_type" value="pickup" 
-                               class="sr-only peer" 
-                               {% if order_info.delivery_type == 'pickup' or not order_info.delivery_type %}checked{% endif %}>
-                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-orange-500 peer-checked:bg-orange-50 hover:border-orange-300 transition-all duration-200">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H9m0 0H5m4 0V9a2 2 0 012-2h2a2 2 0 012 2v12" />
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">Recoger en tienda</div>
-                                    <div class="text-sm text-gray-500">{{ settings.address }}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
+        <div>
+            <label for="customer_phone" class="block text-sm font-medium text-gray-700">
+                Teléfono <span class="text-red-500">*</span>
+            </label>
+            <input type="tel" name="customer_phone" id="customer_phone" required
+                   value="{{ order_info.customer_phone }}"
+                   placeholder="+57 300 123 4567"
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+        </div>
 
-                    <label class="relative cursor-pointer">
-                        <input type="radio" name="delivery_type" value="delivery" 
-                               class="sr-only peer" 
-                               {% if order_info.delivery_type == 'delivery' %}checked{% endif %}>
-                        <div class="p-4 border-2 border-gray-200 rounded-lg peer-checked:border-orange-500 peer-checked:bg-orange-50 hover:border-orange-300 transition-all duration-200">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">Delivery</div>
-                                    <div class="text-sm text-gray-500">Entrega a domicilio</div>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Información del cliente -->
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                    <label for="customer_name" class="block text-sm font-medium text-gray-700">
-                        Nombre completo <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="customer_name" id="customer_name" required
-                           value="{{ order_info.customer_name|default:user.get_full_name }}"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
-                </div>
-
-                <div>
-                    <label for="customer_phone" class="block text-sm font-medium text-gray-700">
-                        Teléfono <span class="text-red-500">*</span>
-                    </label>
-                    <input type="tel" name="customer_phone" id="customer_phone" required
-                           value="{{ order_info.customer_phone }}"
-                           placeholder="+57 300 123 4567"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
-                </div>
-
-                <div class="sm:col-span-2">
-                    <label for="customer_email" class="block text-sm font-medium text-gray-700">
-                        Email (opcional)
-                    </label>
-                    <input type="email" name="customer_email" id="customer_email"
-                           value="{{ order_info.customer_email|default:user.email }}"
-                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
-                </div>
-            </div>
-
-            <!-- Información de delivery (oculta por defecto) -->
-            <div id="delivery-info" class="space-y-4 {% if order_info.delivery_type != 'delivery' %}hidden{% endif %}">
-                <div class="border-t pt-6">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Información de entrega</h3>
-                    
-                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div class="sm:col-span-2">
-                            <label for="delivery_address" class="block text-sm font-medium text-gray-700">
-                                Dirección completa <span class="text-red-500">*</span>
-                            </label>
-                            <textarea name="delivery_address" id="delivery_address" rows="2"
-                                      placeholder="Ej: Calle 123 #45-67, Apartamento 8B"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">{{ order_info.delivery_address }}</textarea>
-                        </div>
-
-                        <div>
-                            <label for="delivery_neighborhood" class="block text-sm font-medium text-gray-700">
-                                Barrio
-                            </label>
-                            <input type="text" name="delivery_neighborhood" id="delivery_neighborhood"
-                                   value="{{ order_info.delivery_neighborhood }}"
-                                   placeholder="Ej: Centro, Norte, Sur"
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
-                        </div>
-
-                        <div>
-                            <label for="delivery_city" class="block text-sm font-medium text-gray-700">
-                                Ciudad
-                            </label>
-                            <input type="text" name="delivery_city" id="delivery_city"
-                                   value="{{ settings.city }}" readonly
-                                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 sm:text-sm">
-                        </div>
-
-                        <div class="sm:col-span-2">
-                            <label for="delivery_references" class="block text-sm font-medium text-gray-700">
-                                Referencias adicionales
-                            </label>
-                            <textarea name="delivery_references" id="delivery_references" rows="2"
-                                      placeholder="Ej: Casa de dos pisos, portón negro, frente al parque"
-                                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">{{ order_info.delivery_references }}</textarea>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Fecha y hora -->
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div>
-                    <label for="desired_date" class="block text-sm font-medium text-gray-700">
-                        Fecha deseada <span class="text-red-500">*</span>
-                    </label>
-                    <select name="desired_date" id="desired_date" required
-                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
-                        <option value="">Selecciona una fecha</option>
-                        {% for date in available_dates %}
-                            <option value="{{ date.value }}" 
-                                    {% if order_info.desired_date == date.value %}selected{% endif %}
-                                    {% if date.is_weekend %}class="text-orange-600"{% endif %}>
-                                {{ date.display }}{% if date.is_weekend %} (Fin de semana){% endif %}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500">
-                        Mínimo {{ settings.min_advance_days }} días de anticipación
-                    </p>
-                </div>
-
-                <div>
-                    <label for="desired_time" class="block text-sm font-medium text-gray-700">
-                        Hora deseada <span class="text-red-500">*</span>
-                    </label>
-                    <select name="desired_time" id="desired_time" required
-                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 sm:text-sm">
-                        <option value="">Selecciona una hora</option>
-                        {% for slot in time_slots %}
-                            <option value="{{ slot.value }}" 
-                                    {% if order_info.desired_time == slot.value %}selected{% endif %}>
-                                {{ slot.display }}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    <p class="mt-1 text-xs text-gray-500">
-                        Horario: {{ settings.delivery_start_time|time:"H:i" }} - {{ settings.delivery_end_time|time:"H:i" }}
-                    </p>
-                </div>
-            </div>
-
-            <!-- Información importante -->
-            <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
-                <div class="flex">
-                    <div class="flex-shrink-0">
-                        <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <div class="ml-3">
-                        <h3 class="text-sm font-medium text-blue-800">Información importante</h3>
-                        <div class="mt-2 text-sm text-blue-700">
-                            <ul class="list-disc pl-5 space-y-1">
-                                <li>Pedido mínimo: ${{ settings.minimum_order_amount|floatformat:0|intcomma }} COP</li>
-                                <li>Envío gratis desde: ${{ settings.free_delivery_threshold|floatformat:0|intcomma }} COP</li>
-                                <li>Los pedidos se pueden modificar hasta el día anterior</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Botones -->
-            <div class="flex justify-between items-center pt-6 border-t border-gray-200">
-                <a href="{% url 'core:home' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                    <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Cancelar
-                </a>
-                
-                <button type="submit" class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
-                    Continuar
-                    <svg class="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                </button>
-            </div>
-        </form>
+        <div class="md:col-span-2">
+            <label for="customer_email" class="block text-sm font-medium text-gray-700">
+                Email (opcional)
+            </label>
+            <input type="email" name="customer_email" id="customer_email"
+                   value="{{ order_info.customer_email|default:user.email }}"
+                   class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+        </div>
     </div>
-</div>
 
-<!-- JavaScript para manejar el tipo de entrega -->
+    <!-- Información de delivery (oculta por defecto) -->
+    <div id="delivery-info" class="space-y-4 {% if order_info.delivery_type != 'delivery' %}hidden{% endif %}">
+        <div class="border-t pt-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Información de entrega</h3>
+            
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label for="delivery_address" class="block text-sm font-medium text-gray-700">
+                        Dirección completa <span class="text-red-500">*</span>
+                    </label>
+                    <textarea name="delivery_address" id="delivery_address" rows="2"
+                              placeholder="Ej: Calle 123 #45-67, Apartamento 8B"
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">{{ order_info.delivery_address }}</textarea>
+                </div>
+
+                <div>
+                    <label for="delivery_neighborhood" class="block text-sm font-medium text-gray-700">
+                        Barrio
+                    </label>
+                    <input type="text" name="delivery_neighborhood" id="delivery_neighborhood"
+                           value="{{ order_info.delivery_neighborhood }}"
+                           placeholder="Ej: Centro, Norte, Sur"
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                </div>
+
+                <div>
+                    <label for="delivery_city" class="block text-sm font-medium text-gray-700">
+                        Ciudad
+                    </label>
+                    <input type="text" name="delivery_city" id="delivery_city"
+                           value="{{ settings.city }}" readonly
+                           class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 text-sm">
+                </div>
+
+                <div class="md:col-span-2">
+                    <label for="delivery_references" class="block text-sm font-medium text-gray-700">
+                        Referencias adicionales
+                    </label>
+                    <textarea name="delivery_references" id="delivery_references" rows="2"
+                              placeholder="Ej: Casa de dos pisos, portón negro, frente al parque"
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">{{ order_info.delivery_references }}</textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fecha y hora -->
+    <div class="grid grid-cols-1 gap-4 md:gap-6 md:grid-cols-2">
+        <div>
+            <label for="desired_date" class="block text-sm font-medium text-gray-700">
+                Fecha deseada <span class="text-red-500">*</span>
+            </label>
+            <select name="desired_date" id="desired_date" required
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                <option value="">Selecciona una fecha</option>
+                {% for date in available_dates %}
+                    <option value="{{ date.value }}" 
+                            {% if order_info.desired_date == date.value %}selected{% endif %}
+                            {% if date.is_weekend %}class="text-orange-600"{% endif %}>
+                        {{ date.display }}{% if date.is_weekend %} (Fin de semana){% endif %}
+                    </option>
+                {% endfor %}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">
+                Mínimo {{ settings.min_advance_days }} días de anticipación
+            </p>
+        </div>
+
+        <div>
+            <label for="desired_time" class="block text-sm font-medium text-gray-700">
+                Hora deseada <span class="text-red-500">*</span>
+            </label>
+            <select name="desired_time" id="desired_time" required
+                    class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 text-sm">
+                <option value="">Selecciona una hora</option>
+                {% for slot in time_slots %}
+                    <option value="{{ slot.value }}" 
+                            {% if order_info.desired_time == slot.value %}selected{% endif %}>
+                        {{ slot.display }}
+                    </option>
+                {% endfor %}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">
+                Horario: {{ settings.delivery_start_time|time:"H:i" }} - {{ settings.delivery_end_time|time:"H:i" }}
+            </p>
+        </div>
+    </div>
+
+    <!-- Información importante -->
+    <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <span class="material-icons text-blue-400">info</span>
+            </div>
+            <div class="ml-3">
+                <h3 class="text-sm font-medium text-blue-800">Información importante</h3>
+                <div class="mt-2 text-sm text-blue-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>Pedido mínimo: ${{ settings.minimum_order_amount|floatformat:0|intcomma }} COP</li>
+                        <li>Envío gratis desde: ${{ settings.free_delivery_threshold|floatformat:0|intcomma }} COP</li>
+                        <li>Los pedidos se pueden modificar hasta el día anterior</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block step_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const deliveryRadios = document.querySelectorAll('input[name="delivery_type"]');

@@ -1,0 +1,111 @@
+{% extends "core/base_dashboard.html" %}
+{% load humanize %}
+
+{% block title %}{{ step_title }} | Janay Pedidos{% endblock %}
+
+{% block main_content %}
+<!-- Indicador de pasos - Mejorado para móviles -->
+<div class="mb-6 md:mb-8 px-4 sm:px-0 mt-4 md:mt-0">
+    <nav aria-label="Progress">
+        <!-- Versión móvil: Stack horizontal centrado -->
+        <div class="block md:hidden">
+            <div class="flex justify-center items-center space-x-4">
+                {% for step in all_steps %}
+                    <div class="flex flex-col items-center">
+                        <div class="flex items-center justify-center w-8 h-8 
+                                   {% if step.number == current_step %}bg-orange-600{% elif step.number < current_step %}bg-green-500{% else %}bg-gray-200{% endif %} 
+                                   rounded-full mb-2">
+                            {% if step.number < current_step %}
+                                <span class="material-icons text-white" style="font-size: 16px;">check</span>
+                            {% else %}
+                                <span class="{% if step.number == current_step %}text-white{% else %}text-gray-500{% endif %} text-sm font-medium">
+                                    {{ step.number }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <span class="text-xs font-medium 
+                                   {% if step.number == current_step %}text-orange-600{% elif step.number < current_step %}text-green-600{% else %}text-gray-500{% endif %} 
+                                   text-center">
+                            {{ step.short_title }}
+                        </span>
+                    </div>
+                    
+                    <!-- Línea conectora (excepto en el último elemento) -->
+                    {% if not forloop.last %}
+                        <div class="w-8 h-0.5 bg-gray-200 mt-[-16px]"></div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Versión desktop -->
+        <ol class="hidden md:flex items-center justify-center space-x-6 lg:space-x-12">
+            {% for step in all_steps %}
+                <li class="flex items-center">
+                    {% if not forloop.first %}
+                        <div class="w-12 lg:w-20 h-0.5 bg-gray-200"></div>
+                    {% endif %}
+                    <div class="relative flex items-center justify-center w-8 h-8 lg:w-10 lg:h-10 
+                               {% if step.number == current_step %}bg-orange-600 ring-orange-100{% elif step.number < current_step %}bg-green-500 ring-green-100{% else %}bg-gray-200 ring-gray-50{% endif %} 
+                               rounded-full ring-4 lg:ring-8">
+                        {% if step.number < current_step %}
+                            <span class="material-icons text-white text-sm">check</span>
+                        {% else %}
+                            <span class="{% if step.number == current_step %}text-white{% else %}text-gray-500{% endif %} text-sm font-medium">
+                                {{ step.number }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    <span class="ml-2 lg:ml-3 text-sm font-medium 
+                               {% if step.number == current_step %}text-orange-600{% elif step.number < current_step %}text-green-600{% else %}text-gray-500{% endif %}">
+                        {{ step.title }}
+                    </span>
+                </li>
+            {% endfor %}
+        </ol>
+    </nav>
+</div>
+
+<!-- Contenido principal -->
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-orange-50 px-4 py-4 md:px-6 border-b border-orange-100">
+            <h1 class="text-xl md:text-2xl font-bold text-gray-900">{{ step_title }}</h1>
+            <p class="text-sm text-gray-600 mt-1">{{ step_description }}</p>
+        </div>
+
+        <!-- Contenido del step específico -->
+        {% block step_content %}{% endblock %}
+
+        <!-- Navigation buttons -->
+        <div class="flex flex-col space-y-3 md:flex-row md:justify-between md:items-center md:space-y-0 p-4 md:p-6 border-t border-gray-200">
+            {% block step_navigation %}
+                <!-- Botón cancelar/volver -->
+                {% if previous_step_url %}
+                    <a href="{{ previous_step_url }}" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <span class="material-icons mr-2 text-sm">arrow_back</span>
+                        Volver
+                    </a>
+                {% else %}
+                    <a href="{% url 'core:home' %}" class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        <span class="material-icons mr-2 text-sm">close</span>
+                        Cancelar
+                    </a>
+                {% endif %}
+                
+                <!-- Botón continuar -->
+                {% if next_step_text %}
+                    <button type="submit" form="step-form" class="inline-flex items-center justify-center px-6 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                        {{ next_step_text }}
+                        <span class="material-icons ml-2 text-sm">arrow_forward</span>
+                    </button>
+                {% endif %}
+            {% endblock %}
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript común para steps -->
+{% block step_js %}{% endblock %}
+{% endblock %}

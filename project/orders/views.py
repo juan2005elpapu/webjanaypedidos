@@ -129,14 +129,27 @@ def order_step1(request):
         if current_time > end_time:
             break
     
+    # Configuración de steps para el template base
+    all_steps = [
+        {'number': 1, 'title': 'Información Básica', 'short_title': 'Información'},
+        {'number': 2, 'title': 'Selección de Productos', 'short_title': 'Productos'},
+        {'number': 3, 'title': 'Confirmación y Pago', 'short_title': 'Confirmación'},
+    ]
+    
     context = {
         'settings': settings,
         'available_dates': available_dates,
         'time_slots': time_slots,
         'order_info': order_info,
+        
+        # Datos para el template base de steps
         'step_number': 1,
+        'current_step': 1,
         'step_title': 'Información Básica',
-        'step_description': 'Completa la información para tu pedido'
+        'step_description': 'Completa la información para tu pedido',
+        'all_steps': all_steps,
+        'next_step_text': 'Continuar',
+        'previous_step_url': None,
     }
     
     return render(request, 'orders/step1.html', context)
