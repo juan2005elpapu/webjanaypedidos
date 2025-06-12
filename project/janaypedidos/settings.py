@@ -246,6 +246,32 @@ UNFOLD = {
                         "link": reverse_lazy("admin:products_product_changelist")
                     },
                 ]
+            },
+            {
+                "title": _("Orders"),
+                "collapsible": True,
+                "items": [
+                    {
+                        "title": _("Orders"),
+                        "icon": "shopping_cart",
+                        "link": reverse_lazy("admin:orders_order_changelist")
+                    },
+                    {
+                        "title": _("Order Items"),
+                        "icon": "list_alt",
+                        "link": reverse_lazy("admin:orders_orderitem_changelist")
+                    },
+                    {
+                        "title": _("Modification Requests"),
+                        "icon": "edit_note",
+                        "link": reverse_lazy("admin:orders_ordermodificationrequest_changelist")
+                    },
+                    {
+                        "title": _("Business Settings"),
+                        "icon": "settings",
+                        "link": reverse_lazy("admin:orders_businesssettings_changelist")
+                    },
+                ]
             }
         ]
     },
