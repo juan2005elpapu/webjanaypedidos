@@ -348,3 +348,19 @@ class BusinessSettings(models.Model):
     
     def __str__(self):
         return f"Configuraciones {self.business_name}"
+    
+    @classmethod
+    def get_settings(cls):
+        """Obtiene la configuración del negocio, crea una por defecto si no existe"""
+        settings = cls.objects.first()
+        if not settings:
+            # Crear configuración por defecto
+            settings = cls.objects.create(
+                business_name='Janay',
+                contact_email='info@janay.com',
+                contact_phone='+57 300 123 4567',
+                address='Villanueva, Casanare, Colombia',
+                city='Villanueva',
+                department='Casanare'
+            )
+        return settings

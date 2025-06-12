@@ -24,12 +24,16 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
+    path('products/', include('products.urls')),
+    path('orders/', include('orders.urls')),  
+    # path('notifications/', include('notifications.urls')),  # Si planeas usarla
+    
+    # Desarrollo
     path('__reload__/', include('django_browser_reload.urls')),
     
+    # Páginas principales
     path('', WelcomeView.as_view(), name='welcome'),
-    
     path('dashboard/', include('core.urls')),
-    path('products/', include('products.urls')),
 ]
 
 if settings.DEBUG:
