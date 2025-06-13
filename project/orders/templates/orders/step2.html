@@ -48,13 +48,13 @@
                                                     <span class="material-icons text-xs">remove</span>
                                                 </button>
                                                 <input type="number" 
-                                                       name="product_{{ product.id }}" 
-                                                       id="product_{{ product.id }}"
-                                                       value="{% for item in selected_products.items %}{% if item.0 == product.id %}{{ item.1 }}{% endif %}{% endfor %}"
-                                                       min="0" 
-                                                       max="50"
-                                                       class="quantity-input"
-                                                       onchange="updateSummary()">
+                                                        name="product_{{ product.id }}" 
+                                                        id="product_{{ product.id }}"
+                                                        value="{% for item in selected_products.items %}{% if item.0 == product.id %}{{ item.1 }}{% endif %}{% endfor %}"
+                                                        min="0" 
+                                                        max="50"
+                                                        class="quantity-input"
+                                                        onchange="updateSummary()">
                                                 <button type="button" class="quantity-btn" onclick="increaseQuantity({{ product.id }})">
                                                     <span class="material-icons text-xs">add</span>
                                                 </button>
@@ -122,20 +122,20 @@
 
 {% block step_js %}
 <script>
-// Datos de productos para JavaScript
+// Datos de productos para JavaScript 
 const products = {
-    {% for product in products %}
-    {{ product.id }}: {
-        name: '{{ product.name|escapejs }}',
-        price: {{ product.price }},
-        category: '{{ product.category.name|escapejs }}'
+{% for product in products %}
+    "{{ product.id }}": {
+        "name": "{{ product.name|escapejs }}",
+        "price": {{ product.price }},
+        "category": "{{ product.category.name|escapejs }}"
     }{% if not forloop.last %},{% endif %}
-    {% endfor %}
+{% endfor %}
 };
 
 const settings = {
-    minimumOrder: {{ settings.minimum_order_amount }},
-    freeDeliveryThreshold: {{ settings.free_delivery_threshold }}
+    "minimumOrder": {{ settings.minimum_order_amount }},
+    "freeDeliveryThreshold": {{ settings.free_delivery_threshold }}
 };
 
 function increaseQuantity(productId) {
