@@ -418,93 +418,65 @@
     will-change: background-color, color;
   }
 
-  /* Resumen del pedido */
+  /* RESUMEN DE PEDIDO - DISEÑO ORIGINAL CON TAILWIND PURO */
   .order-summary {
-    @apply bg-orange-50 border border-orange-200 rounded-lg p-4 sticky top-4;
+    @apply bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-500 rounded-xl p-6 shadow-lg;
   }
 
   .order-summary-title {
-    @apply text-lg font-semibold text-gray-900 mb-3;
+    @apply text-lg font-semibold text-orange-700 mb-4 text-center;
+  }
+
+  .no-products-selected {
+    @apply text-center py-8 px-4 text-gray-400;
   }
 
   .order-summary-item {
-    @apply flex justify-between items-center py-2 border-b border-orange-200 last:border-b-0;
+    @apply flex justify-between items-center py-3 border-b border-orange-200 last:border-b-0;
   }
 
   .order-summary-item-name {
-    @apply text-sm text-gray-700 flex-1;
+    @apply font-medium text-gray-900 flex-1;
   }
 
   .order-summary-item-qty {
-    @apply text-sm text-gray-500 mx-2;
+    @apply text-gray-500 mx-2 text-sm;
   }
 
   .order-summary-item-price {
-    @apply text-sm font-medium text-gray-900;
+    @apply font-semibold text-orange-600;
   }
 
   .order-summary-total {
-    @apply flex justify-between items-center pt-3 mt-3 border-t border-orange-300 text-lg font-bold;
+    @apply flex justify-between items-center p-4 bg-orange-100 bg-opacity-50 rounded-lg mt-4;
   }
 
   .order-summary-total-label {
-    @apply text-gray-900;
+    @apply font-semibold text-orange-700;
   }
 
   .order-summary-total-amount {
-    @apply text-orange-600;
+    @apply font-bold text-xl text-orange-700;
   }
 
-  /* Estado sin productos seleccionados */
-  .no-products-selected {
-    @apply text-center py-8 text-gray-500;
-  }
-
-  /* Grid responsivo para step 2 */
-  .step2-grid {
-    @apply grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6;
-  }
-
-  .step2-products-section {
-    @apply lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200;
-  }
-
-  .step2-summary-section {
-    @apply lg:col-span-1;
-  }
-
-  /* BOTONES PRINCIPALES DEL STEP 2 */
-  .btn-add-products {
-    @apply inline-flex items-center px-4 py-3 md:px-6 border border-transparent text-sm md:text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105;
-  }
-
-  .btn-modify-products {
-    @apply inline-flex items-center px-4 py-3 md:px-6 border border-orange-600 text-sm md:text-base font-medium rounded-md text-orange-600 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200;
-  }
-
-  /* CONTENEDOR PRINCIPAL VACÍO */
-  .empty-products-container {
-    @apply min-h-80 md:min-h-96 flex items-center justify-center p-4 md:p-8;
-  }
-
-  /* MODAL OVERLAY Y CONTENIDO - RESPONSIVE */
+  /* MODAL OVERLAY Y CONTENIDO - SOLO TAILWIND RESPONSIVE */
   .modal-overlay {
     @apply fixed inset-0 bg-black bg-opacity-50 z-50 hidden opacity-0 transition-opacity duration-300 ease-out p-2 md:p-4;
   }
 
   .modal-overlay.active {
-    @apply flex items-start md:items-center justify-center opacity-100 pt-4 md:pt-0;
+    @apply flex items-start sm:items-center justify-center opacity-100 pt-4 sm:pt-0;
   }
 
   .modal-content {
-    @apply bg-white rounded-t-xl md:rounded-xl w-full max-w-sm sm:max-w-2xl md:max-w-4xl max-h-full md:max-h-screen overflow-hidden transform scale-90 translate-y-4 transition-all duration-300 ease-out shadow-2xl;
+    @apply bg-white rounded-t-xl sm:rounded-xl w-full max-w-sm sm:max-w-2xl md:max-w-4xl min-h-screen sm:min-h-0 sm:max-h-screen overflow-hidden transform scale-90 translate-y-4 transition-all duration-300 ease-out shadow-2xl m-0 sm:m-auto;
   }
 
   .modal-overlay.active .modal-content {
     @apply scale-100 translate-y-0;
   }
 
-  /* HEADER DEL MODAL - RESPONSIVE */
+  /* HEADER DEL MODAL - RESPONSIVE CON TAILWIND */
   .modal-header {
     @apply px-4 py-3 md:px-6 md:py-4 border-b border-gray-200 bg-gray-50;
   }
@@ -521,7 +493,7 @@
     @apply text-gray-400 hover:text-gray-600 transition-colors duration-200;
   }
 
-  /* BODY DEL MODAL - RESPONSIVE */
+  /* BODY DEL MODAL - RESPONSIVE CON TAILWIND */
   .modal-body {
     @apply p-4 md:p-6 max-h-60 sm:max-h-80 md:max-h-96 overflow-y-auto;
   }
@@ -539,7 +511,7 @@
     @apply absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg md:text-xl;
   }
 
-  /* FILTROS DE CATEGORÍA DEL MODAL - RESPONSIVE */
+  /* FILTROS DE CATEGORÍA DEL MODAL - RESPONSIVE CON TAILWIND */
   .category-filters-modal {
     @apply flex flex-wrap gap-1 md:gap-2 mb-4 md:mb-6;
   }
@@ -556,12 +528,12 @@
     @apply bg-orange-500 text-white;
   }
 
-  /* GRID DE PRODUCTOS DEL MODAL - RESPONSIVE */
+  /* GRID DE PRODUCTOS DEL MODAL - RESPONSIVE CON TAILWIND */
   .products-grid-modal {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4;
   }
 
-  /* CARDS DE PRODUCTOS DEL MODAL - RESPONSIVE */
+  /* CARDS DE PRODUCTOS DEL MODAL - RESPONSIVE CON TAILWIND */
   .product-modal-card {
     @apply bg-white border-2 border-gray-200 rounded-lg p-3 md:p-4 transition-all duration-200 ease-out cursor-pointer relative;
   }
@@ -574,7 +546,7 @@
     @apply border-orange-500 bg-orange-50;
   }
 
-  /* IMAGEN DEL PRODUCTO EN MODAL - RESPONSIVE */
+  /* IMAGEN DEL PRODUCTO EN MODAL - RESPONSIVE CON TAILWIND */
   .product-modal-image {
     @apply w-full h-24 md:h-32 rounded-lg overflow-hidden mb-2 md:mb-3 bg-gray-100 relative;
   }
@@ -587,7 +559,7 @@
     @apply w-full h-full bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 animate-pulse;
   }
 
-  /* INFORMACIÓN DEL PRODUCTO EN MODAL - RESPONSIVE */
+  /* INFORMACIÓN DEL PRODUCTO EN MODAL - RESPONSIVE CON TAILWIND */
   .product-modal-info h4 {
     @apply font-semibold text-xs md:text-sm text-gray-900 mb-1 line-clamp-2;
   }
@@ -600,29 +572,25 @@
     @apply text-xs text-gray-600 mb-2 md:mb-3 line-clamp-2 hidden sm:block;
   }
 
-  /* CONTROLES DE CANTIDAD DEL MODAL - RESPONSIVE */
+  /* CONTROLES DE CANTIDAD DEL MODAL - RESPONSIVE CON TAILWIND */
   .product-modal-controls {
     @apply flex items-center justify-center gap-1 md:gap-2;
   }
 
   .modal-quantity-btn {
-    @apply w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center cursor-pointer transition-all duration-150 ease-out;
-  }
-
-  .modal-quantity-btn:hover {
-    @apply bg-orange-500 text-white border-orange-500;
+    @apply w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center cursor-pointer transition-all duration-150 ease-out hover:bg-orange-500 hover:text-white hover:border-orange-500;
   }
 
   .modal-quantity-input {
     @apply w-10 md:w-12 text-center border border-gray-300 rounded px-1 md:px-2 py-1 text-xs md:text-sm focus:ring-orange-500 focus:border-orange-500;
   }
 
-  /* BADGE DE CANTIDAD SELECCIONADA - RESPONSIVE */
+  /* BADGE DE CANTIDAD SELECCIONADA - RESPONSIVE CON TAILWIND */
   .selected-count {
     @apply absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-orange-500 text-white rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-xs font-bold;
   }
 
-  /* FOOTER DEL MODAL - RESPONSIVE */
+  /* FOOTER DEL MODAL - RESPONSIVE CON TAILWIND */
   .modal-footer {
     @apply px-4 py-3 md:px-6 md:py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0;
   }
@@ -667,7 +635,41 @@
     }
   }
 
-  /* ...resto del código existente... */
+  /* GRID DEL STEP 2 - RESPONSIVE ARREGLADO */
+  .step2-grid {
+    @apply grid grid-cols-1 gap-4 md:gap-6;
+  }
+
+  /* Para pantallas grandes (laptop/tablet) */
+  @media (min-width: 1024px) {
+    .step2-grid {
+      @apply grid-cols-3;
+    }
+  }
+
+  .step2-products-section {
+    @apply col-span-1 lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200;
+  }
+
+  .step2-summary-section {
+    @apply col-span-1;
+  }
+
+  /* CONTENEDOR VACÍO ARREGLADO */
+  .empty-products-container {
+    @apply min-h-80 lg:min-h-96 flex items-center justify-center p-4 md:p-8;
+  }
+
+  /* BOTONES PRINCIPALES DEL STEP 2 */
+  .btn-add-products {
+    @apply inline-flex items-center px-4 py-3 md:px-6 border border-transparent text-sm md:text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105;
+  }
+
+  .btn-modify-products {
+    @apply inline-flex items-center px-4 py-3 md:px-6 border border-orange-600 text-sm md:text-base font-medium rounded-md text-orange-600 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200;
+  }
+
+  /* ...resto del código existente sin cambios... */
 }
 
 /* Clases que usan peer - fuera de @layer components */

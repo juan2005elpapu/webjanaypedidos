@@ -253,29 +253,30 @@
 <form method="post" id="step-form" class="p-4 md:p-6">
     {% csrf_token %}
     
-    <!-- DEBUG INFO -->
-    <div style="background: #dbeafe; padding: 1rem; margin-bottom: 1rem; border-radius: 6px;">
-        <h4>🐛 DEBUG INFO:</h4>
-        <p><strong>Productos disponibles:</strong> {{ products.count }}</p>
-        <p><strong>Categorías:</strong> {{ categories.count }}</p>
-        <p><strong>Settings:</strong> {{ settings }}</p>
+    <!-- DEBUG INFO - Temporal -->
+    <div class="bg-blue-50 border border-blue-200 p-4 mb-4 rounded-lg">
+        <h4 class="font-semibold text-blue-800">🐛 DEBUG INFO:</h4>
+        <div class="text-sm text-blue-700 space-y-1 mt-2">
+            <p><strong>Productos disponibles:</strong> {{ products.count }}</p>
+            <p><strong>Categorías:</strong> {{ categories.count }}</p>
+            <p><strong>Settings:</strong> {{ settings }}</p>
+        </div>
     </div>
     
     <div class="step2-grid">
         <!-- Sección principal vacía con botón -->
         <div class="step2-products-section">
             <div class="empty-products-container">
-                <div style="text-align: center;">
-                    <div style="width: 6rem; height: 6rem; background: #fed7aa; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
-                        <span class="material-icons" style="color: #f97316; font-size: 2.5rem;">restaurant_menu</span>
+                <div class="text-center">
+                    <div class="mx-auto flex items-center justify-center w-24 h-24 bg-orange-100 rounded-full mb-6">
+                        <span class="material-icons text-orange-600 text-4xl">restaurant_menu</span>
                     </div>
-                    <h3 style="font-size: 1.125rem; font-weight: 500; color: #111827; margin-bottom: 0.5rem;">Selecciona tus productos</h3>
-                    <p style="color: #6b7280; margin-bottom: 1.5rem;">Haz clic en el botón para explorar nuestro menú</p>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Selecciona tus productos</h3>
+                    <p class="text-gray-500 mb-6">Haz clic en el botón para explorar nuestro menú</p>
                     <button type="button" 
                             id="open-products-modal" 
-                            class="btn-add-products"
-                            onclick="console.log('BOTÓN CLICKEADO DIRECTAMENTE'); openModal();">
-                        <span class="material-icons" style="margin-right: 0.5rem;">add_shopping_cart</span>
+                            class="btn-add-products">
+                        <span class="material-icons mr-2">add_shopping_cart</span>
                         Añadir Productos
                     </button>
                 </div>
@@ -339,19 +340,19 @@
 <div class="modal-overlay" id="products-modal">
     <div class="modal-content">
         <!-- Header -->
-        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="modal-header flex justify-between items-center">
             <div>
-                <h2 style="font-size: 1.25rem; font-weight: 600; color: #111827;">🛒 Nuestros Productos</h2>
-                <p style="font-size: 0.875rem; color: #6b7280; margin-top: 0.25rem;">{{ products.count }} productos disponibles</p>
+                <h2 class="modal-title">🛒 Nuestros Productos</h2>
+                <p class="modal-subtitle">{{ products.count }} productos disponibles</p>
             </div>
-            <button type="button" id="close-modal" style="color: #9ca3af; background: none; border: none; cursor: pointer;">
-                <span class="material-icons" style="font-size: 1.5rem;">close</span>
+            <button type="button" id="close-modal" class="modal-close-btn">
+                <span class="material-icons text-2xl">close</span>
             </button>
         </div>
         
         <!-- Body -->
         <div class="modal-body">
-            <div style="background: #dcfce7; padding: 0.5rem; margin-bottom: 1rem; border-radius: 4px; font-size: 0.75rem;">
+            <div class="bg-green-50 border border-green-200 p-2 mb-4 rounded text-xs text-green-700">
                 ✅ Modal cargado correctamente - {{ products.count }} productos
             </div>
             
@@ -390,22 +391,22 @@
                                      onload="this.style.display='block'; this.previousElementSibling.style.display='none';"
                                      style="display: none;">
                             {% else %}
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-                                    <span class="material-icons" style="color: #9ca3af; font-size: 3rem;">bakery_dining</span>
+                                <div class="flex items-center justify-center h-full">
+                                    <span class="material-icons text-gray-400 text-3xl">bakery_dining</span>
                                 </div>
                             {% endif %}
                         </div>
                         
                         <div class="product-modal-info">
-                            <h4 style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">{{ product.name }}</h4>
-                            <div style="color: #f97316; font-weight: 600; font-size: 0.875rem; margin-bottom: 0.5rem;">${{ product.price|floatformat:0|intcomma }}</div>
+                            <h4>{{ product.name }}</h4>
+                            <div class="product-modal-price">${{ product.price|floatformat:0|intcomma }}</div>
                             {% if product.description %}
-                                <p style="font-size: 0.75rem; color: #6b7280; margin-bottom: 0.75rem;">{{ product.description|truncatewords:10 }}</p>
+                                <p class="product-modal-description">{{ product.description|truncatewords:10 }}</p>
                             {% endif %}
                             
                             <div class="product-modal-controls">
                                 <button type="button" class="modal-quantity-btn" onclick="decreaseModalQuantity({{ product.id }})">
-                                    <span class="material-icons" style="font-size: 0.875rem;">remove</span>
+                                    <span class="material-icons text-sm">remove</span>
                                 </button>
                                 <input type="number" 
                                        class="modal-quantity-input"
@@ -415,16 +416,16 @@
                                        max="50"
                                        onchange="updateModalQuantity({{ product.id }})">
                                 <button type="button" class="modal-quantity-btn" onclick="increaseModalQuantity({{ product.id }})">
-                                    <span class="material-icons" style="font-size: 0.875rem;">add</span>
+                                    <span class="material-icons text-sm">add</span>
                                 </button>
                             </div>
                         </div>
                         
-                        <div style="position: absolute; top: -8px; right: -8px; background: #f97316; color: white; border-radius: 50%; width: 24px; height: 24px; display: none; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 600;" id="count-{{ product.id }}">0</div>
+                        <div class="selected-count" id="count-{{ product.id }}" style="display: none;">0</div>
                     </div>
                 {% empty %}
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-                        <p>No hay productos disponibles</p>
+                    <div class="col-span-full text-center py-8">
+                        <p class="text-gray-500">No hay productos disponibles</p>
                     </div>
                 {% endfor %}
             </div>
@@ -432,10 +433,10 @@
         
         <!-- Footer -->
         <div class="modal-footer">
-            <div style="font-size: 0.875rem; color: #6b7280;">
+            <div class="modal-footer-info">
                 <span id="selected-items-count">0</span> productos seleccionados
             </div>
-            <div style="display: flex; gap: 0.75rem;">
+            <div class="modal-footer-actions">
                 <button type="button" id="clear-selection" class="btn-clear-selection">
                     Limpiar todo
                 </button>
@@ -452,6 +453,24 @@
 <script>
 console.log('🚀 JavaScript iniciado');
 
+// Datos de productos desde Django
+const products = {
+{% for product in products %}
+    "{{ product.id }}": {
+        "name": "{{ product.name|escapejs }}",
+        "price": {{ product.price }},
+        "category": "{{ product.category.name|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+{% endfor %};
+
+
+const settings = {
+    "minimumOrder": {{ settings.minimum_order_amount|default:20000 }},
+    "freeDeliveryThreshold": {{ settings.free_delivery_threshold|default:50000 }}
+};
+
+let selectedProducts = {};
+
 // Debug inicial
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ DOM cargado');
@@ -459,40 +478,77 @@ document.addEventListener('DOMContentLoaded', function() {
     const openBtn = document.getElementById('open-products-modal');
     const modal = document.getElementById('products-modal');
     const closeBtn = document.getElementById('close-modal');
+    const applyBtn = document.getElementById('apply-selection');
+    const clearBtn = document.getElementById('clear-selection');
     
     console.log('🔍 Elementos encontrados:');
-    console.log('- Botón abrir:', openBtn);
-    console.log('- Modal:', modal);
-    console.log('- Botón cerrar:', closeBtn);
+    console.log('- Botón abrir:', openBtn ? '✅' : '❌');
+    console.log('- Modal:', modal ? '✅' : '❌');
     console.log('- Productos count:', {{ products.count }});
     
-    // Event listeners con debug
+    // Event listeners
     if (openBtn) {
-        // Múltiples formas de agregar el event listener
-        openBtn.onclick = function(e) {
-            console.log('🎯 ONCLICK ejecutado');
-            e.preventDefault();
-            openModal();
-        };
-        
         openBtn.addEventListener('click', function(e) {
-            console.log('🎯 ADDEVENTLISTENER ejecutado');
+            console.log('🎯 CLICK en botón detectado');
             e.preventDefault();
             openModal();
         });
-        
-        console.log('✅ Event listeners agregados');
-    } else {
-        console.error('❌ No se encontró el botón open-products-modal');
     }
     
     if (closeBtn) {
         closeBtn.addEventListener('click', function(e) {
-            console.log('🔒 CLICK en cerrar detectado');
             e.preventDefault();
             closeModal();
         });
     }
+    
+    if (applyBtn) {
+        applyBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            applySelection();
+        });
+    }
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            clearSelection();
+        });
+    }
+    
+    // Cerrar modal con ESC
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
+        }
+    });
+    
+    // Cerrar modal clickeando fuera
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+    }
+    
+    // Configurar búsqueda
+    const searchInput = document.getElementById('product-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', filterProducts);
+    }
+    
+    // Configurar filtros de categoría
+    document.querySelectorAll('.category-filter-modal').forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            document.querySelectorAll('.category-filter-modal').forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            filterProducts();
+        });
+    });
     
     // Test manual
     window.testModal = openModal;
@@ -504,22 +560,13 @@ function openModal() {
     const modal = document.getElementById('products-modal');
     
     if (!modal) {
-        console.error('❌ Modal no encontrado en openModal()');
+        console.error('❌ Modal no encontrado');
         return;
     }
     
-    console.log('🔄 Agregando clase active...');
     modal.classList.add('active');
     document.body.style.overflow = 'hidden';
-    
-    console.log('✅ Modal abierto - clases:', modal.className);
-    
-    // Verificar estilos computados
-    const styles = window.getComputedStyle(modal);
-    console.log('🎨 Estilos computados:');
-    console.log('- Display:', styles.display);
-    console.log('- Opacity:', styles.opacity);
-    console.log('- Z-index:', styles.zIndex);
+    console.log('✅ Modal abierto');
 }
 
 function closeModal() {
@@ -527,7 +574,7 @@ function closeModal() {
     const modal = document.getElementById('products-modal');
     
     if (!modal) {
-        console.error('❌ Modal no encontrado en closeModal()');
+        console.error('❌ Modal no encontrado');
         return;
     }
     
@@ -536,39 +583,187 @@ function closeModal() {
     console.log('✅ Modal cerrado');
 }
 
-// Funciones básicas
 function increaseModalQuantity(productId) {
     console.log('➕ Incrementar producto:', productId);
     const input = document.getElementById(`modal-product-${productId}`);
     if (input) {
-        input.value = parseInt(input.value || 0) + 1;
-        updateModalQuantity(productId);
+        const currentValue = parseInt(input.value) || 0;
+        if (currentValue < 50) {
+            input.value = currentValue + 1;
+            updateModalQuantity(productId);
+        }
     }
 }
 
 function decreaseModalQuantity(productId) {
     console.log('➖ Decrementar producto:', productId);
     const input = document.getElementById(`modal-product-${productId}`);
-    if (input && parseInt(input.value || 0) > 0) {
-        input.value = parseInt(input.value || 0) - 1;
-        updateModalQuantity(productId);
+    if (input) {
+        const currentValue = parseInt(input.value) || 0;
+        if (currentValue > 0) {
+            input.value = currentValue - 1;
+            updateModalQuantity(productId);
+        }
     }
 }
 
 function updateModalQuantity(productId) {
     console.log('🔄 Actualizar producto:', productId);
     const input = document.getElementById(`modal-product-${productId}`);
-    const count = document.getElementById(`count-${productId}`);
+    const quantity = parseInt(input.value) || 0;
+    const card = document.querySelector(`[data-product-id="${productId}"]`);
+    const countBadge = document.getElementById(`count-${productId}`);
     
-    if (input && count) {
-        const quantity = parseInt(input.value || 0);
-        if (quantity > 0) {
-            count.style.display = 'flex';
-            count.textContent = quantity;
-        } else {
-            count.style.display = 'none';
-        }
+    if (quantity > 0) {
+        selectedProducts[productId] = quantity;
+        card.classList.add('selected');
+        countBadge.style.display = 'flex';
+        countBadge.textContent = quantity;
+    } else {
+        delete selectedProducts[productId];
+        card.classList.remove('selected');
+        countBadge.style.display = 'none';
     }
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const count = Object.keys(selectedProducts).length;
+    document.getElementById('selected-items-count').textContent = count;
+}
+
+function clearSelection() {
+    console.log('🧹 Limpiar selección');
+    selectedProducts = {};
+    
+    document.querySelectorAll('.modal-quantity-input').forEach(input => {
+        input.value = 0;
+    });
+    
+    document.querySelectorAll('.product-modal-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    document.querySelectorAll('.selected-count').forEach(badge => {
+        badge.style.display = 'none';
+    });
+    
+    updateSelectedCount();
+}
+
+function applySelection() {
+    console.log('✅ Aplicar selección:', selectedProducts);
+    updateMainSummary();
+    updateHiddenInputs();
+    closeModal();
+    
+    if (Object.keys(selectedProducts).length > 0) {
+        updateMainProductsSection();
+    }
+}
+
+function updateMainProductsSection() {
+    const container = document.querySelector('.empty-products-container');
+    const count = Object.keys(selectedProducts).length;
+    
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center w-24 h-24 bg-green-100 rounded-full mb-6">
+                <span class="material-icons text-green-600 text-4xl">check_circle</span>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">${count} producto${count > 1 ? 's' : ''} seleccionado${count > 1 ? 's' : ''}</h3>
+            <p class="text-gray-500 mb-6">Puedes modificar las cantidades haciendo clic en el botón</p>
+            <button type="button" 
+                    id="modify-products" 
+                    class="btn-modify-products">
+                <span class="material-icons mr-2">edit</span>
+                Modificar Productos
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('modify-products').addEventListener('click', openModal);
+}
+
+function updateMainSummary() {
+    const orderItems = document.getElementById('order-items');
+    const noProducts = document.getElementById('no-products');
+    const orderTotal = document.getElementById('order-total');
+    const deliveryInfo = document.getElementById('delivery-info');
+    
+    let totalAmount = 0;
+    let hasItems = false;
+    let itemsHtml = '';
+    
+    Object.keys(selectedProducts).forEach(productId => {
+        const quantity = selectedProducts[productId];
+        if (quantity > 0) {
+            hasItems = true;
+            const product = products[productId];
+            const itemTotal = product.price * quantity;
+            totalAmount += itemTotal;
+            
+            itemsHtml += `
+                <div class="order-summary-item">
+                    <span class="order-summary-item-name">${product.name}</span>
+                    <span class="order-summary-item-qty">x${quantity}</span>
+                    <span class="order-summary-item-price">$${itemTotal.toLocaleString()}</span>
+                </div>
+            `;
+        }
+    });
+    
+    if (hasItems) {
+        noProducts.style.display = 'none';
+        orderTotal.style.display = 'flex';
+        deliveryInfo.style.display = 'block';
+        orderItems.innerHTML = itemsHtml;
+        
+        const shippingCost = totalAmount >= settings.freeDeliveryThreshold ? 0 : 5000;
+        const finalTotal = totalAmount + shippingCost;
+        
+        document.getElementById('total-amount').textContent = `$${totalAmount.toLocaleString()}`;
+        document.getElementById('subtotal-amount').textContent = `$${totalAmount.toLocaleString()}`;
+        document.getElementById('shipping-amount').textContent = shippingCost === 0 ? 'Gratis' : `$${shippingCost.toLocaleString()}`;
+        document.getElementById('final-amount').textContent = `$${finalTotal.toLocaleString()}`;
+    } else {
+        noProducts.style.display = 'block';
+        orderTotal.style.display = 'none';
+        deliveryInfo.style.display = 'none';
+    }
+}
+
+function updateHiddenInputs() {
+    const container = document.getElementById('hidden-inputs');
+    container.innerHTML = '';
+    
+    Object.keys(selectedProducts).forEach(productId => {
+        const quantity = selectedProducts[productId];
+        if (quantity > 0) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = `product_${productId}`;
+            input.value = quantity;
+            container.appendChild(input);
+        }
+    });
+}
+
+function filterProducts() {
+    const searchTerm = document.getElementById('product-search').value.toLowerCase();
+    const activeCategory = document.querySelector('.category-filter-modal.active').dataset.category;
+    
+    document.querySelectorAll('.product-modal-card').forEach(card => {
+        const name = card.dataset.name;
+        const description = card.dataset.description;
+        const category = card.dataset.category;
+        
+        const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
+        const matchesCategory = !activeCategory || category === activeCategory;
+        
+        card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+    });
 }
 </script>
 {% endblock %}
