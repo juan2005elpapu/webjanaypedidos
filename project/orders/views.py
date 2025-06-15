@@ -175,8 +175,14 @@ def order_step2(request):
                     continue
         
         if selected_products:
-            # Guardar en sesión
-            request.session['selected_products'] = selected_products
+            # CORREGIDO: Guardar en la estructura correcta de sesión
+            if 'order_cart' not in request.session:
+                request.session['order_cart'] = {}
+            
+            request.session['order_cart']['selected_products'] = selected_products
+            request.session.modified = True
+            
+            messages.success(request, f"Has seleccionado {len(selected_products)} productos.")
             return redirect('orders:step3')
         else:
             messages.error(request, 'Debes seleccionar al menos un producto.')
@@ -191,11 +197,12 @@ def order_step2(request):
         is_available=True
     ).order_by('category__name', 'name')
     
-    # Obtener configuración - CORREGIDO
+    # Obtener configuración
     settings = BusinessSettings.get_settings()
     
-    # Productos ya seleccionados (si los hay)
-    selected_products = request.session.get('selected_products', {})
+    # Productos ya seleccionados (si los hay) - CORREGIDO
+    cart_data = request.session.get('order_cart', {})
+    selected_products = cart_data.get('selected_products', {})
     
     # Configuración de steps para el template base
     all_steps = [

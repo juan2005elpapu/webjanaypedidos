@@ -107,7 +107,7 @@
                 <h3 class="product-card-title">{{ product.name }}</h3>
                 <p class="product-card-category">{{ product.category.name }}</p>
                 <div class="product-card-footer">
-                    <span class="product-card-price">${{ product.price|floatformat:2|intcomma }}</span>
+                    <span class="product-card-price">${{ product.price|floatformat:0|intcomma }}</span>
                     <a href="{% url 'products:detail' product.id %}" class="btn-secondary">
                         Ver detalles
                     </a>

@@ -32,7 +32,7 @@
                 {% endif %}
             </div>
             <div class="product-detail-price">
-                <span class="product-price-main">${{ product.price|floatformat:2|intcomma }}</span>
+                <span class="product-price-main">${{ product.price|floatformat:0|intcomma }}</span>
                 {% if product.weight %}
                     <span class="product-weight">{{ product.weight }}g</span>
                 {% endif %}

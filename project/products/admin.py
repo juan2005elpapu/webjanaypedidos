@@ -47,10 +47,7 @@ class ProductForm(forms.ModelForm):
 
 
 def duplicate_products(modeladmin, request, queryset):
-    """
-    Action para duplicar productos seleccionados en el admin
-    Crea objetos completamente nuevos e independientes
-    """
+    """Action para duplicar productos seleccionados en el admin"""
     duplicated_count = 0
     errors = []
     
@@ -65,41 +62,32 @@ def duplicate_products(modeladmin, request, queryset):
                 'category': original_product.category,
                 'is_available': original_product.is_available,
                 'ingredients': original_product.ingredients,
-                # NO incluir: id, created_at, updated_at, image (por ahora)
             }
             
             # Crear producto completamente nuevo
             duplicated_product = Product(**original_data)
-            duplicated_product.save()  # Esto genera un nuevo ID automáticamente
+            duplicated_product.save()
             
-            # Copiar la imagen si existe (crear archivo físico independiente)
+            # Copiar la imagen si existe
             if original_product.image:
                 try:
-                    # Obtener información del archivo original
                     original_path = original_product.image.path
                     original_name = os.path.basename(original_path)
                     
-                    # Generar nombre único para la imagen duplicada
                     name_parts = os.path.splitext(original_name)
                     new_name = f"{name_parts[0]}_copy_{duplicated_product.id}{name_parts[1]}"
                     
-                    # Construir nueva ruta
                     original_dir = os.path.dirname(original_product.image.name)
                     new_relative_path = os.path.join(original_dir, new_name)
                     new_absolute_path = os.path.join(settings.MEDIA_ROOT, new_relative_path)
                     
-                    # Crear directorio si no existe
                     os.makedirs(os.path.dirname(new_absolute_path), exist_ok=True)
-                    
-                    # Copiar archivo físico
                     shutil.copy2(original_path, new_absolute_path)
                     
-                    # Asignar nueva imagen al producto duplicado
                     duplicated_product.image = new_relative_path
                     duplicated_product.save()
                     
                 except Exception as e:
-                    # Si falla la copia de imagen, continuar sin ella
                     errors.append(f'Producto "{original_product.name}" duplicado sin imagen. Error: {str(e)}')
             
             duplicated_count += 1
@@ -121,9 +109,7 @@ def duplicate_products(modeladmin, request, queryset):
     if duplicated_count == 0 and not errors:
         messages.error(request, 'No se pudo duplicar ningún producto.')
 
-# Configurar el action
 duplicate_products.short_description = "Duplicar productos seleccionados"
-
 
 @admin.register(Category)
 class CategoryAdmin(ModelAdmin):
@@ -133,7 +119,7 @@ class CategoryAdmin(ModelAdmin):
     
     def products_count(self, obj):
         """Muestra el número de productos en la categoría"""
-        count = obj.product_set.count()
+        count = obj.products.count()
         if count > 0:
             url = reverse('admin:products_product_changelist') + f'?category__id__exact={obj.id}'
             return format_html('<a href="{}" target="_blank">{} productos</a>', url, count)
@@ -141,60 +127,82 @@ class CategoryAdmin(ModelAdmin):
     
     products_count.short_description = 'Productos'
 
-
 @admin.register(Product)
 class ProductAdmin(ModelAdmin):
     form = ProductForm
-    list_display = ('name', 'category', 'price', 'weight', 'is_available', 'display_image')
-    list_filter = ('category', 'is_available', 'created_at')
-    search_fields = ('name', 'description', 'ingredients')
-    list_editable = ('price', 'is_available')
-    autocomplete_fields = ('category',)
-    readonly_fields = ('display_image_large', 'created_at', 'updated_at')
-    
-    # 🔥 AGREGAR EL ACTION DE DUPLICACIÓN
+    # SIMPLIFICADO: Sin availability_status
+    list_display = ['image_preview', 'name_link', 'price', 'weight', 'category', 'is_available']
+    list_filter = ['category', 'is_available', 'created_at']
+    search_fields = ['name', 'description']
+    # CORREGIDO: Solo campos que están en list_display
+    list_editable = ['price', 'weight', 'is_available']
+    readonly_fields = ['image_preview_large', 'created_at', 'updated_at']
     actions = [duplicate_products]
     
-    def display_image(self, obj):
-        if obj.image:
-            return format_html('<img src="{}" width="50" height="50" style="object-fit: cover;" />', obj.image.url)
-        return "Sin imagen"
-    display_image.short_description = 'Vista previa'
-    
-    def display_image_large(self, obj):
-        if obj.image:
-            return format_html('<img src="{}" width="300" style="max-height: 300px; object-fit: contain;" />', obj.image.url)
-        return "Sin imagen"
-    display_image_large.short_description = 'Vista previa de imagen'
-    
     fieldsets = (
-        ('Información básica', {
-            'fields': ('name', 'category', 'description', 'price')
+        ('Información Básica', {
+            'fields': ('name', 'description', 'category')
         }),
-        ('Detalles adicionales', {
-            'fields': ('weight', 'ingredients', 'is_available')
+        ('Precio y Disponibilidad', {
+            'fields': ('price', 'is_available'),
+            'description': 'El precio se guardará sin decimales automáticamente'
         }),
         ('Imagen', {
-            'fields': ('image', 'display_image_large'),
-            'description': 'Formatos aceptados: JPEG, PNG, GIF, BMP, TIFF. Se convertirá automáticamente a WebP para optimización web.'
+            'fields': ('image', 'image_preview_large'),
+            'description': 'Las imágenes se convertirán automáticamente a WebP'
         }),
-        ('Información del sistema', {
+        ('Detalles del Producto', {
+            'fields': ('weight', 'ingredients'),
+            'classes': ('collapse',)
+        }),
+        ('Fechas', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         }),
     )
     
-    def save_model(self, request, obj, form, change):
-        """
-        Sobreescribe el método save_model para manejar correctamente
-        el caso donde la imagen ha sido eliminada.
-        """
-        # Si el formulario tenía una imagen marcada para eliminar (Clear)
-        if 'image' in form.cleaned_data and form.cleaned_data['image'] is False:
-            obj.image = None
-        
-        super().save_model(request, obj, form, change)
-        
-        # Si la imagen se eliminó, asegurarnos de que se guarde con None
-        if 'image' in form.cleaned_data and form.cleaned_data['image'] is False:
-            obj.image = None
+    def name_link(self, obj):
+        """Nombre del producto como enlace a la página de edición"""
+        url = reverse('admin:products_product_change', args=[obj.pk])
+        # MEJORADO: Color diferente si no está disponible
+        color = '#ffffff' if obj.is_available else '#ef4444'
+        return format_html('<a href="{}" style="text-decoration: none; color: {}; font-weight: 500;">{}</a>', url, color, obj.name)
+    name_link.short_description = 'Nombre'
+    name_link.admin_order_field = 'name'
+    
+    def image_preview(self, obj):
+        """Previsualización pequeña para la lista"""
+        if obj.image:
+            return format_html(
+                '<img src="{}" alt="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">',
+                obj.image.url,
+                obj.name
+            )
+        return format_html(
+            '<div style="width: 50px; height: 50px; background-color: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px;">Sin imagen</div>'
+        )
+    image_preview.short_description = 'Imagen'
+    
+    def image_preview_large(self, obj):
+        """Previsualización grande para el formulario"""
+        if obj.image:
+            return format_html(
+                '''
+                <div style="margin-top: 10px;">
+                    <img src="{}" alt="{}" style="max-width: 300px; max-height: 300px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                    <p style="margin-top: 8px; font-size: 12px; color: #6b7280;">
+                        <strong>Archivo:</strong> {}<br>
+                        <strong>URL:</strong> <a href="{}" target="_blank">{}</a>
+                    </p>
+                </div>
+                ''',
+                obj.image.url,
+                obj.name,
+                obj.image.name,
+                obj.image.url,
+                obj.image.url
+            )
+        return format_html(
+            '<div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; text-align: center; color: #6b7280;">No hay imagen cargada</div>'
+        )
+    image_preview_large.short_description = 'Vista previa'
