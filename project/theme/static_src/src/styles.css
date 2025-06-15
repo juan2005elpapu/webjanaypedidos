@@ -462,97 +462,90 @@
 
   /* Grid responsivo para step 2 */
   .step2-grid {
-    @apply grid grid-cols-1 lg:grid-cols-3 gap-6;
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6;
   }
 
   .step2-products-section {
-    @apply lg:col-span-2;
+    @apply lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200;
   }
 
   .step2-summary-section {
     @apply lg:col-span-1;
   }
 
-  /* Productos grid dentro de categorías */
-  .category-products-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 gap-4;
-  }
-
-  /* NUEVOS COMPONENTES PARA MODAL DE PRODUCTOS */
-  
-  /* Botones principales del step 2 */
+  /* BOTONES PRINCIPALES DEL STEP 2 */
   .btn-add-products {
-    @apply inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105;
+    @apply inline-flex items-center px-4 py-3 md:px-6 border border-transparent text-sm md:text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105;
   }
 
   .btn-modify-products {
-    @apply inline-flex items-center px-6 py-3 border border-orange-600 text-base font-medium rounded-md text-orange-600 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200;
+    @apply inline-flex items-center px-4 py-3 md:px-6 border border-orange-600 text-sm md:text-base font-medium rounded-md text-orange-600 bg-white hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200;
   }
 
-  /* Contenedor principal vacío */
+  /* CONTENEDOR PRINCIPAL VACÍO */
   .empty-products-container {
-    @apply min-h-96 flex items-center justify-center;
+    @apply min-h-80 md:min-h-96 flex items-center justify-center p-4 md:p-8;
   }
 
-  /* Modal overlay y contenido */
+  /* MODAL OVERLAY Y CONTENIDO - RESPONSIVE */
   .modal-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-50 z-50 hidden opacity-0 transition-opacity duration-300 ease-out;
+    @apply fixed inset-0 bg-black bg-opacity-50 z-50 hidden opacity-0 transition-opacity duration-300 ease-out p-2 md:p-4;
   }
 
   .modal-overlay.active {
-    @apply flex items-center justify-center p-4 opacity-100;
+    @apply flex items-start md:items-center justify-center opacity-100 pt-4 md:pt-0;
   }
 
   .modal-content {
-    @apply bg-white rounded-xl w-full max-w-4xl max-h-screen overflow-hidden transform scale-90 translate-y-4 transition-all duration-300 ease-out shadow-2xl;
+    @apply bg-white rounded-t-xl md:rounded-xl w-full max-w-sm sm:max-w-2xl md:max-w-4xl max-h-full md:max-h-screen overflow-hidden transform scale-90 translate-y-4 transition-all duration-300 ease-out shadow-2xl;
   }
 
   .modal-overlay.active .modal-content {
     @apply scale-100 translate-y-0;
   }
 
-  /* Header del modal */
+  /* HEADER DEL MODAL - RESPONSIVE */
   .modal-header {
-    @apply px-6 py-4 border-b border-gray-200 bg-gray-50;
+    @apply px-4 py-3 md:px-6 md:py-4 border-b border-gray-200 bg-gray-50;
   }
 
   .modal-title {
-    @apply text-xl font-semibold text-gray-900;
+    @apply text-lg md:text-xl font-semibold text-gray-900;
   }
 
   .modal-subtitle {
-    @apply text-sm text-gray-500 mt-1;
+    @apply text-xs md:text-sm text-gray-500 mt-1;
   }
 
   .modal-close-btn {
     @apply text-gray-400 hover:text-gray-600 transition-colors duration-200;
   }
 
-  /* Body del modal */
+  /* BODY DEL MODAL - RESPONSIVE */
   .modal-body {
-    @apply p-6 max-h-96 overflow-y-auto;
+    @apply p-4 md:p-6 max-h-60 sm:max-h-80 md:max-h-96 overflow-y-auto;
   }
 
-  /* Buscador del modal */
+  /* BUSCADOR DEL MODAL */
   .search-container {
-    @apply relative mb-6;
+    @apply relative mb-4 md:mb-6;
   }
 
   .search-input {
-    @apply w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-lg text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200;
+    @apply w-full pl-8 md:pl-10 pr-4 py-2 md:py-3 border-2 border-gray-300 rounded-lg text-sm md:text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200;
   }
 
   .search-icon {
-    @apply absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400;
+    @apply absolute left-2 md:left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg md:text-xl;
   }
 
-  /* Filtros de categoría del modal */
+  /* FILTROS DE CATEGORÍA DEL MODAL - RESPONSIVE */
   .category-filters-modal {
-    @apply flex flex-wrap gap-2 mb-6;
+    @apply flex flex-wrap gap-1 md:gap-2 mb-4 md:mb-6;
   }
 
   .category-filter-modal {
-    @apply inline-block px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 ease-out cursor-pointer;
+    @apply inline-block px-2 py-1 md:px-4 md:py-2 text-xs md:text-sm font-medium rounded-full transition-all duration-200 ease-out cursor-pointer;
   }
 
   .category-filter-modal:not(.active) {
@@ -563,14 +556,14 @@
     @apply bg-orange-500 text-white;
   }
 
-  /* Grid de productos del modal */
+  /* GRID DE PRODUCTOS DEL MODAL - RESPONSIVE */
   .products-grid-modal {
-    @apply grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4;
   }
 
-  /* Cards de productos del modal */
+  /* CARDS DE PRODUCTOS DEL MODAL - RESPONSIVE */
   .product-modal-card {
-    @apply bg-white border-2 border-gray-200 rounded-lg p-4 transition-all duration-200 ease-out cursor-pointer relative;
+    @apply bg-white border-2 border-gray-200 rounded-lg p-3 md:p-4 transition-all duration-200 ease-out cursor-pointer relative;
   }
 
   .product-modal-card:hover {
@@ -581,9 +574,9 @@
     @apply border-orange-500 bg-orange-50;
   }
 
-  /* Imagen del producto en modal */
+  /* IMAGEN DEL PRODUCTO EN MODAL - RESPONSIVE */
   .product-modal-image {
-    @apply w-full h-32 rounded-lg overflow-hidden mb-3 bg-gray-100 relative;
+    @apply w-full h-24 md:h-32 rounded-lg overflow-hidden mb-2 md:mb-3 bg-gray-100 relative;
   }
 
   .product-modal-image img {
@@ -594,26 +587,26 @@
     @apply w-full h-full bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 animate-pulse;
   }
 
-  /* Información del producto en modal */
+  /* INFORMACIÓN DEL PRODUCTO EN MODAL - RESPONSIVE */
   .product-modal-info h4 {
-    @apply font-semibold text-sm text-gray-900 mb-1 line-clamp-2;
+    @apply font-semibold text-xs md:text-sm text-gray-900 mb-1 line-clamp-2;
   }
 
   .product-modal-price {
-    @apply text-orange-600 font-bold text-sm mb-2;
+    @apply text-orange-600 font-bold text-xs md:text-sm mb-2;
   }
 
   .product-modal-description {
-    @apply text-xs text-gray-600 mb-3 line-clamp-2;
+    @apply text-xs text-gray-600 mb-2 md:mb-3 line-clamp-2 hidden sm:block;
   }
 
-  /* Controles de cantidad del modal */
+  /* CONTROLES DE CANTIDAD DEL MODAL - RESPONSIVE */
   .product-modal-controls {
-    @apply flex items-center justify-center gap-2;
+    @apply flex items-center justify-center gap-1 md:gap-2;
   }
 
   .modal-quantity-btn {
-    @apply w-8 h-8 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center cursor-pointer transition-all duration-150 ease-out;
+    @apply w-6 h-6 md:w-8 md:h-8 rounded-full bg-gray-100 border border-gray-300 flex items-center justify-center cursor-pointer transition-all duration-150 ease-out;
   }
 
   .modal-quantity-btn:hover {
@@ -621,41 +614,36 @@
   }
 
   .modal-quantity-input {
-    @apply w-12 text-center border border-gray-300 rounded px-2 py-1 text-sm focus:ring-orange-500 focus:border-orange-500;
+    @apply w-10 md:w-12 text-center border border-gray-300 rounded px-1 md:px-2 py-1 text-xs md:text-sm focus:ring-orange-500 focus:border-orange-500;
   }
 
-  /* Badge de cantidad seleccionada */
+  /* BADGE DE CANTIDAD SELECCIONADA - RESPONSIVE */
   .selected-count {
-    @apply absolute -top-2 -right-2 bg-orange-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold;
+    @apply absolute -top-1 -right-1 md:-top-2 md:-right-2 bg-orange-500 text-white rounded-full w-5 h-5 md:w-6 md:h-6 flex items-center justify-center text-xs font-bold;
   }
 
-  /* Footer del modal */
+  /* FOOTER DEL MODAL - RESPONSIVE */
   .modal-footer {
-    @apply px-6 py-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between;
+    @apply px-4 py-3 md:px-6 md:py-4 border-t border-gray-200 bg-gray-50 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0;
   }
 
   .modal-footer-info {
-    @apply text-sm text-gray-600;
+    @apply text-xs md:text-sm text-gray-600 order-2 sm:order-1;
   }
 
   .modal-footer-actions {
-    @apply flex gap-3;
+    @apply flex gap-2 md:gap-3 w-full sm:w-auto justify-center order-1 sm:order-2;
   }
 
   .btn-clear-selection {
-    @apply text-gray-600 hover:text-gray-800 text-sm font-medium transition-colors duration-200;
+    @apply text-gray-600 hover:text-gray-800 text-xs md:text-sm font-medium transition-colors duration-200 px-3 py-1;
   }
 
   .btn-apply-selection {
-    @apply px-6 py-2 bg-orange-600 text-white text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all duration-200;
+    @apply px-4 py-2 md:px-6 bg-orange-600 text-white text-xs md:text-sm font-medium rounded-lg hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all duration-200;
   }
 
-  /* Skeleton para imágenes pequeñas */
-  .image-skeleton-small {
-    @apply w-full h-full bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 animate-pulse rounded;
-  }
-
-  /* Utilidades adicionales */
+  /* UTILIDADES ADICIONALES */
   .line-clamp-2 {
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -663,40 +651,19 @@
     overflow: hidden;
   }
 
-  /* Responsive para modal */
-  @media (max-width: 640px) {
-    .modal-content {
-      @apply max-h-full rounded-t-xl rounded-b-none m-0;
-    }
-
-    .products-grid-modal {
-      @apply grid-cols-1 sm:grid-cols-2;
-    }
-
-    .product-modal-image {
-      @apply h-24;
-    }
-
-    .modal-body {
-      @apply max-h-80;
-    }
+  /* AJUSTE ESPECÍFICO PARA MÓVILES MUY PEQUEÑOS */
+  .modal-content {
+    @apply min-h-screen sm:min-h-0;
   }
 
-  @media (max-width: 768px) {
-    .modal-header {
-      @apply px-4 py-3;
+  /* OVERRIDE PARA MÓVILES - MODAL FULL SCREEN */
+  @media (max-width: 640px) {
+    .modal-overlay.active {
+      @apply items-start;
     }
-
-    .modal-body {
-      @apply px-4;
-    }
-
-    .modal-footer {
-      @apply px-4 py-3 flex-col gap-3;
-    }
-
-    .modal-footer-actions {
-      @apply w-full justify-center;
+    
+    .modal-content {
+      @apply rounded-none m-0 max-h-full;
     }
   }
 

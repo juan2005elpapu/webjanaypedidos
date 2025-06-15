@@ -159,75 +159,43 @@ def order_step1(request):
 @login_required
 def order_step2(request):
     """Step 2: Selección de productos"""
-    # Verificar que se haya completado el Step 1
-    cart_data = request.session.get('order_cart', {})
-    if 'order_info' not in cart_data:
-        messages.warning(request, "Primero debes completar la información básica.")
-        return redirect('orders:step1')
     
     if request.method == 'POST':
         # Procesar selección de productos
-        selected_products = []
-        total_amount = Decimal('0.00')
-        errors = []
+        selected_products = {}
         
-        # Obtener productos del formulario
         for key, value in request.POST.items():
-            if key.startswith('product_') and value:
+            if key.startswith('product_'):
                 try:
                     product_id = int(key.replace('product_', ''))
                     quantity = int(value)
-                    
                     if quantity > 0:
-                        product = get_object_or_404(Product, id=product_id, is_available=True)
-                        item_total = product.price * quantity
-                        
-                        selected_products.append({
-                            'product_id': product_id,
-                            'product_name': product.name,
-                            'product_price': float(product.price),
-                            'quantity': quantity,
-                            'total': float(item_total)
-                        })
-                        total_amount += item_total
-                        
-                except (ValueError, Product.DoesNotExist):
+                        selected_products[product_id] = quantity
+                except (ValueError, TypeError):
                     continue
         
-        if not selected_products:
-            errors.append("Debes seleccionar al menos un producto.")
-        
-        # Verificar monto mínimo
-        settings = BusinessSettings.get_settings()
-        if total_amount < settings.minimum_order_amount:
-            errors.append(f"El pedido mínimo es ${settings.minimum_order_amount:,.0f} COP. Tu pedido actual es ${total_amount:,.0f} COP.")
-        
-        if errors:
-            for error in errors:
-                messages.error(request, error)
-        else:
-            # Guardar productos en la sesión
-            request.session['order_cart']['items'] = selected_products
-            request.session['order_cart']['total_amount'] = float(total_amount)
-            request.session.modified = True
-            
-            messages.success(request, "Productos seleccionados. Procede a confirmar tu pedido.")
+        if selected_products:
+            # Guardar en sesión
+            request.session['selected_products'] = selected_products
             return redirect('orders:step3')
+        else:
+            messages.error(request, 'Debes seleccionar al menos un producto.')
     
-    # Optimizar consultas con select_related y cache
-    categories = cache.get('active_categories')
-    if categories is None:
-        categories = Category.objects.all()
-        cache.set('active_categories', categories, 60 * 15)
+    # GET request - mostrar formulario
+    # Obtener productos y categorías
+    categories = Category.objects.filter(
+        products__is_available=True
+    ).distinct().order_by('name')
     
-    # Optimizar productos con select_related
     products = Product.objects.select_related('category').filter(
         is_available=True
     ).order_by('category__name', 'name')
     
-    # Obtener productos ya seleccionados de la sesión
-    selected_items = cart_data.get('items', [])
-    selected_products_dict = {item['product_id']: item['quantity'] for item in selected_items}
+    # Obtener configuración - CORREGIDO
+    settings = BusinessSettings.get_settings()
+    
+    # Productos ya seleccionados (si los hay)
+    selected_products = request.session.get('selected_products', {})
     
     # Configuración de steps para el template base
     all_steps = [
@@ -237,10 +205,10 @@ def order_step2(request):
     ]
     
     context = {
-        'categories': categories,
         'products': products,
-        'selected_products': selected_products_dict,
-        'settings': BusinessSettings.get_settings(),
+        'categories': categories,
+        'selected_products': selected_products,
+        'settings': settings,
         
         # Datos para el template base de steps
         'step_number': 2,
@@ -248,7 +216,7 @@ def order_step2(request):
         'step_title': 'Selección de Productos',
         'step_description': 'Elige los productos que deseas pedir',
         'all_steps': all_steps,
-        'next_step_text': 'Confirmar Pedido',
+        'next_step_text': 'Continuar a Confirmación',
         'previous_step_url': reverse('orders:step1'),
     }
     
