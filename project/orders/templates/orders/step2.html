@@ -2,7 +2,6 @@
 {% load humanize %}
 
 {% block extra_head %}
-<!-- Precargar imágenes de productos del step 2 -->
 {% for product in products|slice:":6" %}
     {% if product.image %}
         <link rel="preload" as="image" href="{{ product.image.url }}">
@@ -15,78 +14,22 @@
     {% csrf_token %}
     
     <div class="step2-grid">
-        <!-- Sección de productos -->
+        <!-- Sección principal vacía con botón -->
         <div class="step2-products-section">
-            <div class="product-selection-container">
-                {% regroup products by category as products_by_category %}
-                {% for category_group in products_by_category %}
-                    {% if category_group.list %}
-                        <div class="category-section">
-                            <h3 class="category-header">
-                                <span class="material-icons text-orange-600 mr-2 align-middle">category</span>
-                                {{ category_group.grouper.name }}
-                            </h3>
-                            
-                            <div class="category-products-grid">
-                                {% for product in category_group.list %}
-                                    <div class="product-select-card product-select-item" data-loaded="false">
-                                        <div class="product-select-layout">
-                                            <!-- Imagen del producto optimizada -->
-                                            <div class="product-select-image">
-                                                <!-- Skeleton para imagen individual -->
-                                                <div class="image-skeleton-small" style="display: block;">
-                                                    <div class="skeleton-shimmer"></div>
-                                                </div>
-                                                
-                                                {% if product.image %}
-                                                    <img src="{{ product.image.url }}" 
-                                                         alt="{{ product.name }}" 
-                                                         class="product-select-image-img"
-                                                         loading="{% if forloop.parentloop.counter0 == 0 and forloop.counter <= 4 %}eager{% else %}lazy{% endif %}"
-                                                         decoding="async"
-                                                         onload="handleStep2ImageLoad(this)"
-                                                         onerror="handleStep2ImageError(this)"
-                                                         style="display: none;">
-                                                {% else %}
-                                                    <div class="product-select-no-image" style="display: none;">
-                                                        <span class="material-icons text-gray-400 text-sm">bakery_dining</span>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- Información del producto -->
-                                            <div class="product-select-info">
-                                                <h4 class="product-select-name">{{ product.name }}</h4>
-                                                <p class="product-select-price">${{ product.price|floatformat:0|intcomma }}</p>
-                                                {% if product.description %}
-                                                    <p class="product-select-description">{{ product.description|truncatewords:8 }}</p>
-                                                {% endif %}
-                                            </div>
-                                            
-                                            <!-- Controles de cantidad -->
-                                            <div class="product-select-controls">
-                                                <button type="button" class="quantity-btn" onclick="decreaseQuantity({{ product.id }})">
-                                                    <span class="material-icons text-xs">remove</span>
-                                                </button>
-                                                <input type="number" 
-                                                       name="product_{{ product.id }}" 
-                                                       id="product_{{ product.id }}"
-                                                       value="{% for item in selected_products.items %}{% if item.0 == product.id %}{{ item.1 }}{% endif %}{% endfor %}"
-                                                       min="0" 
-                                                       max="50"
-                                                       class="quantity-input"
-                                                       onchange="updateSummary()">
-                                                <button type="button" class="quantity-btn" onclick="increaseQuantity({{ product.id }})">
-                                                    <span class="material-icons text-xs">add</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+            <div class="empty-products-container">
+                <div class="text-center py-16">
+                    <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-orange-100 mb-6">
+                        <span class="material-icons text-orange-600 text-4xl">restaurant_menu</span>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Selecciona tus productos</h3>
+                    <p class="text-gray-500 mb-6">Haz clic en el botón para explorar nuestro menú</p>
+                    <button type="button" 
+                            id="open-products-modal" 
+                            class="btn-add-products">
+                        <span class="material-icons mr-2">add_shopping_cart</span>
+                        Añadir Productos
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -138,12 +81,119 @@
             </div>
         </div>
     </div>
+    
+    <!-- Inputs hidden para los productos seleccionados -->
+    <div id="hidden-inputs"></div>
 </form>
+
+<!-- Modal de productos -->
+<div class="modal-overlay" id="products-modal">
+    <div class="modal-content">
+        <!-- Header -->
+        <div class="modal-header flex justify-between items-center">
+            <div>
+                <h2 class="modal-title">Nuestros Productos</h2>
+                <p class="modal-subtitle">Selecciona los productos que deseas pedir</p>
+            </div>
+            <button type="button" id="close-modal" class="modal-close-btn">
+                <span class="material-icons text-2xl">close</span>
+            </button>
+        </div>
+        
+        <!-- Body -->
+        <div class="modal-body">
+            <!-- Buscador -->
+            <div class="search-container">
+                <span class="material-icons search-icon">search</span>
+                <input type="text" 
+                       id="product-search" 
+                       class="search-input"
+                       placeholder="Buscar productos...">
+            </div>
+            
+            <!-- Filtros de categoría -->
+            <div class="category-filters-modal">
+                <a href="#" class="category-filter-modal active" data-category="">Todos</a>
+                {% for category in categories %}
+                    <a href="#" class="category-filter-modal" data-category="{{ category.slug }}">{{ category.name }}</a>
+                {% endfor %}
+            </div>
+            
+            <!-- Grid de productos -->
+            <div class="products-grid-modal" id="products-grid-modal">
+                {% for product in products %}
+                    <div class="product-modal-card" 
+                         data-product-id="{{ product.id }}"
+                         data-category="{{ product.category.slug }}"
+                         data-name="{{ product.name|lower }}"
+                         data-description="{{ product.description|lower|default:'' }}">
+                        
+                        <div class="product-modal-image">
+                            {% if product.image %}
+                                <div class="image-skeleton-modal"></div>
+                                <img src="{{ product.image.url }}" 
+                                     alt="{{ product.name }}"
+                                     loading="lazy"
+                                     onload="this.style.display='block'; this.previousElementSibling.style.display='none';"
+                                     style="display: none;">
+                            {% else %}
+                                <div class="flex items-center justify-center h-full">
+                                    <span class="material-icons text-gray-400 text-3xl">bakery_dining</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="product-modal-info">
+                            <h4>{{ product.name }}</h4>
+                            <div class="product-modal-price">${{ product.price|floatformat:0|intcomma }}</div>
+                            {% if product.description %}
+                                <p class="product-modal-description">{{ product.description|truncatewords:10 }}</p>
+                            {% endif %}
+                            
+                            <div class="product-modal-controls">
+                                <button type="button" class="modal-quantity-btn" onclick="decreaseModalQuantity({{ product.id }})">
+                                    <span class="material-icons text-sm">remove</span>
+                                </button>
+                                <input type="number" 
+                                       class="modal-quantity-input"
+                                       id="modal-product-{{ product.id }}"
+                                       value="0"
+                                       min="0"
+                                       max="50"
+                                       onchange="updateModalQuantity({{ product.id }})">
+                                <button type="button" class="modal-quantity-btn" onclick="increaseModalQuantity({{ product.id }})">
+                                    <span class="material-icons text-sm">add</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="selected-count" id="count-{{ product.id }}" style="display: none;">0</div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="modal-footer">
+            <div class="modal-footer-info">
+                <span id="selected-items-count">0</span> productos seleccionados
+            </div>
+            <div class="modal-footer-actions">
+                <button type="button" id="clear-selection" class="btn-clear-selection">
+                    Limpiar todo
+                </button>
+                <button type="button" id="apply-selection" class="btn-apply-selection">
+                    Aplicar Selección
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block step_js %}
 <script>
-// Datos de productos para JavaScript 
+// JavaScript simplificado aquí (el mismo que antes pero sin estilos inline)
 const products = {
 {% for product in products %}
     "{{ product.id }}": {
@@ -159,51 +209,116 @@ const settings = {
     "freeDeliveryThreshold": {{ settings.free_delivery_threshold }}
 };
 
-// Funciones para manejar carga de imágenes en step2
-function handleStep2ImageLoad(img) {
-    const productCard = img.closest('.product-select-item');
-    const skeleton = productCard.querySelector('.image-skeleton-small');
-    
-    skeleton.style.display = 'none';
-    img.style.display = 'block';
-    img.style.opacity = '0';
-    
-    setTimeout(() => {
-        img.style.transition = 'opacity 0.2s ease';
-        img.style.opacity = '1';
-    }, 10);
+let selectedProducts = {};
+
+// Resto del JavaScript igual que antes...
+// (Copio las funciones principales)
+
+function openModal() {
+    document.getElementById('products-modal').classList.add('active');
+    document.body.style.overflow = 'hidden';
 }
 
-function handleStep2ImageError(img) {
-    const productCard = img.closest('.product-select-item');
-    const skeleton = productCard.querySelector('.image-skeleton-small');
-    const noImage = productCard.querySelector('.product-select-no-image');
-    
-    skeleton.style.display = 'none';
-    if (noImage) {
-        noImage.style.display = 'flex';
-    }
+function closeModal() {
+    document.getElementById('products-modal').classList.remove('active');
+    document.body.style.overflow = 'auto';
 }
 
-function increaseQuantity(productId) {
-    const input = document.getElementById(`product_${productId}`);
+function increaseModalQuantity(productId) {
+    const input = document.getElementById(`modal-product-${productId}`);
     const currentValue = parseInt(input.value) || 0;
     if (currentValue < 50) {
         input.value = currentValue + 1;
-        updateSummary();
+        updateModalQuantity(productId);
     }
 }
 
-function decreaseQuantity(productId) {
-    const input = document.getElementById(`product_${productId}`);
+function decreaseModalQuantity(productId) {
+    const input = document.getElementById(`modal-product-${productId}`);
     const currentValue = parseInt(input.value) || 0;
     if (currentValue > 0) {
         input.value = currentValue - 1;
-        updateSummary();
+        updateModalQuantity(productId);
     }
 }
 
-function updateSummary() {
+function updateModalQuantity(productId) {
+    const input = document.getElementById(`modal-product-${productId}`);
+    const quantity = parseInt(input.value) || 0;
+    const card = document.querySelector(`[data-product-id="${productId}"]`);
+    const countBadge = document.getElementById(`count-${productId}`);
+    
+    if (quantity > 0) {
+        selectedProducts[productId] = quantity;
+        card.classList.add('selected');
+        countBadge.style.display = 'flex';
+        countBadge.textContent = quantity;
+    } else {
+        delete selectedProducts[productId];
+        card.classList.remove('selected');
+        countBadge.style.display = 'none';
+    }
+    
+    updateSelectedCount();
+}
+
+function updateSelectedCount() {
+    const count = Object.keys(selectedProducts).length;
+    document.getElementById('selected-items-count').textContent = count;
+}
+
+function clearSelection() {
+    selectedProducts = {};
+    
+    document.querySelectorAll('.modal-quantity-input').forEach(input => {
+        input.value = 0;
+    });
+    
+    document.querySelectorAll('.product-modal-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    document.querySelectorAll('.selected-count').forEach(badge => {
+        badge.style.display = 'none';
+    });
+    
+    updateSelectedCount();
+}
+
+function applySelection() {
+    updateMainSummary();
+    updateHiddenInputs();
+    closeModal();
+    
+    if (Object.keys(selectedProducts).length > 0) {
+        updateMainProductsSection();
+    }
+}
+
+function updateMainProductsSection() {
+    const container = document.querySelector('.empty-products-container');
+    const count = Object.keys(selectedProducts).length;
+    
+    container.innerHTML = `
+        <div class="text-center py-16">
+            <div class="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-green-100 mb-6">
+                <span class="material-icons text-green-600 text-4xl">check_circle</span>
+            </div>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">${count} producto${count > 1 ? 's' : ''} seleccionado${count > 1 ? 's' : ''}</h3>
+            <p class="text-gray-500 mb-6">Puedes modificar las cantidades haciendo clic en el botón</p>
+            <button type="button" 
+                    id="modify-products" 
+                    class="btn-modify-products">
+                <span class="material-icons mr-2">edit</span>
+                Modificar Productos
+            </button>
+        </div>
+    `;
+    
+    document.getElementById('modify-products').addEventListener('click', openModal);
+}
+
+function updateMainSummary() {
     const orderItems = document.getElementById('order-items');
     const noProducts = document.getElementById('no-products');
     const orderTotal = document.getElementById('order-total');
@@ -213,26 +328,21 @@ function updateSummary() {
     let hasItems = false;
     let itemsHtml = '';
     
-    // Recorrer todos los inputs de productos
-    Object.keys(products).forEach(productId => {
-        const input = document.getElementById(`product_${productId}`);
-        if (input) {
-            const quantity = parseInt(input.value) || 0;
+    Object.keys(selectedProducts).forEach(productId => {
+        const quantity = selectedProducts[productId];
+        if (quantity > 0) {
+            hasItems = true;
+            const product = products[productId];
+            const itemTotal = product.price * quantity;
+            totalAmount += itemTotal;
             
-            if (quantity > 0) {
-                hasItems = true;
-                const product = products[productId];
-                const itemTotal = product.price * quantity;
-                totalAmount += itemTotal;
-                
-                itemsHtml += `
-                    <div class="order-summary-item">
-                        <span class="order-summary-item-name">${product.name}</span>
-                        <span class="order-summary-item-qty">x${quantity}</span>
-                        <span class="order-summary-item-price">$${itemTotal.toLocaleString()}</span>
-                    </div>
-                `;
-            }
+            itemsHtml += `
+                <div class="order-summary-item">
+                    <span class="order-summary-item-name">${product.name}</span>
+                    <span class="order-summary-item-qty">x${quantity}</span>
+                    <span class="order-summary-item-price">$${itemTotal.toLocaleString()}</span>
+                </div>
+            `;
         }
     });
     
@@ -242,7 +352,6 @@ function updateSummary() {
         deliveryInfo.style.display = 'block';
         orderItems.innerHTML = itemsHtml;
         
-        // Calcular envío
         const shippingCost = totalAmount >= settings.freeDeliveryThreshold ? 0 : 5000;
         const finalTotal = totalAmount + shippingCost;
         
@@ -254,39 +363,72 @@ function updateSummary() {
         noProducts.style.display = 'block';
         orderTotal.style.display = 'none';
         deliveryInfo.style.display = 'none';
-        orderItems.innerHTML = '<div class="no-products-selected"><span class="material-icons text-gray-400 text-4xl mb-2">shopping_cart</span><p>No has seleccionado productos</p></div>';
     }
 }
 
-// Actualizar resumen al cargar la página
-document.addEventListener('DOMContentLoaded', function() {
-    updateSummary();
+function updateHiddenInputs() {
+    const container = document.getElementById('hidden-inputs');
+    container.innerHTML = '';
     
-    // Manejar productos sin imagen inmediatamente
-    const noImageProducts = document.querySelectorAll('.product-select-no-image');
-    noImageProducts.forEach(noImage => {
-        const productCard = noImage.closest('.product-select-item');
-        const skeleton = productCard.querySelector('.image-skeleton-small');
+    Object.keys(selectedProducts).forEach(productId => {
+        const quantity = selectedProducts[productId];
+        if (quantity > 0) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = `product_${productId}`;
+            input.value = quantity;
+            container.appendChild(input);
+        }
+    });
+}
+
+function filterProducts() {
+    const searchTerm = document.getElementById('product-search').value.toLowerCase();
+    const activeCategory = document.querySelector('.category-filter-modal.active').dataset.category;
+    
+    document.querySelectorAll('.product-modal-card').forEach(card => {
+        const name = card.dataset.name;
+        const description = card.dataset.description;
+        const category = card.dataset.category;
         
-        if (skeleton) {
-            skeleton.style.display = 'none';
-            noImage.style.display = 'flex';
+        const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
+        const matchesCategory = !activeCategory || category === activeCategory;
+        
+        card.style.display = matchesSearch && matchesCategory ? 'block' : 'none';
+    });
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('open-products-modal').addEventListener('click', openModal);
+    document.getElementById('close-modal').addEventListener('click', closeModal);
+    document.getElementById('apply-selection').addEventListener('click', applySelection);
+    document.getElementById('clear-selection').addEventListener('click', clearSelection);
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModal();
         }
     });
     
-    // Optimizar hover performance
-    setTimeout(() => {
-        const productCards = document.querySelectorAll('.product-select-card');
-        productCards.forEach(card => {
-            card.addEventListener('mouseenter', function() {
-                this.style.willChange = 'transform, box-shadow, border-color';
-            });
+    document.getElementById('products-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+    
+    document.getElementById('product-search').addEventListener('input', filterProducts);
+    
+    document.querySelectorAll('.category-filter-modal').forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
             
-            card.addEventListener('mouseleave', function() {
-                this.style.willChange = 'auto';
-            });
+            document.querySelectorAll('.category-filter-modal').forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            filterProducts();
         });
-    }, 500);
+    });
 });
 </script>
 {% endblock %}
