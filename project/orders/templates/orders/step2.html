@@ -1,6 +1,15 @@
 {% extends "orders/base_step.html" %}
 {% load humanize %}
 
+{% block extra_head %}
+<!-- Precargar imágenes de productos del step 2 -->
+{% for product in products|slice:":6" %}
+    {% if product.image %}
+        <link rel="preload" as="image" href="{{ product.image.url }}">
+    {% endif %}
+{% endfor %}
+{% endblock %}
+
 {% block step_content %}
 <form method="post" id="step-form" class="p-4 md:p-6">
     {% csrf_token %}
@@ -20,14 +29,26 @@
                             
                             <div class="category-products-grid">
                                 {% for product in category_group.list %}
-                                    <div class="product-select-card">
+                                    <div class="product-select-card product-select-item" data-loaded="false">
                                         <div class="product-select-layout">
-                                            <!-- Imagen del producto -->
+                                            <!-- Imagen del producto optimizada -->
                                             <div class="product-select-image">
+                                                <!-- Skeleton para imagen individual -->
+                                                <div class="image-skeleton-small" style="display: block;">
+                                                    <div class="skeleton-shimmer"></div>
+                                                </div>
+                                                
                                                 {% if product.image %}
-                                                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-select-image-img">
+                                                    <img src="{{ product.image.url }}" 
+                                                         alt="{{ product.name }}" 
+                                                         class="product-select-image-img"
+                                                         loading="{% if forloop.parentloop.counter0 == 0 and forloop.counter <= 4 %}eager{% else %}lazy{% endif %}"
+                                                         decoding="async"
+                                                         onload="handleStep2ImageLoad(this)"
+                                                         onerror="handleStep2ImageError(this)"
+                                                         style="display: none;">
                                                 {% else %}
-                                                    <div class="product-select-no-image">
+                                                    <div class="product-select-no-image" style="display: none;">
                                                         <span class="material-icons text-gray-400 text-sm">bakery_dining</span>
                                                     </div>
                                                 {% endif %}
@@ -48,13 +69,13 @@
                                                     <span class="material-icons text-xs">remove</span>
                                                 </button>
                                                 <input type="number" 
-                                                        name="product_{{ product.id }}" 
-                                                        id="product_{{ product.id }}"
-                                                        value="{% for item in selected_products.items %}{% if item.0 == product.id %}{{ item.1 }}{% endif %}{% endfor %}"
-                                                        min="0" 
-                                                        max="50"
-                                                        class="quantity-input"
-                                                        onchange="updateSummary()">
+                                                       name="product_{{ product.id }}" 
+                                                       id="product_{{ product.id }}"
+                                                       value="{% for item in selected_products.items %}{% if item.0 == product.id %}{{ item.1 }}{% endif %}{% endfor %}"
+                                                       min="0" 
+                                                       max="50"
+                                                       class="quantity-input"
+                                                       onchange="updateSummary()">
                                                 <button type="button" class="quantity-btn" onclick="increaseQuantity({{ product.id }})">
                                                     <span class="material-icons text-xs">add</span>
                                                 </button>
@@ -138,6 +159,32 @@ const settings = {
     "freeDeliveryThreshold": {{ settings.free_delivery_threshold }}
 };
 
+// Funciones para manejar carga de imágenes en step2
+function handleStep2ImageLoad(img) {
+    const productCard = img.closest('.product-select-item');
+    const skeleton = productCard.querySelector('.image-skeleton-small');
+    
+    skeleton.style.display = 'none';
+    img.style.display = 'block';
+    img.style.opacity = '0';
+    
+    setTimeout(() => {
+        img.style.transition = 'opacity 0.2s ease';
+        img.style.opacity = '1';
+    }, 10);
+}
+
+function handleStep2ImageError(img) {
+    const productCard = img.closest('.product-select-item');
+    const skeleton = productCard.querySelector('.image-skeleton-small');
+    const noImage = productCard.querySelector('.product-select-no-image');
+    
+    skeleton.style.display = 'none';
+    if (noImage) {
+        noImage.style.display = 'flex';
+    }
+}
+
 function increaseQuantity(productId) {
     const input = document.getElementById(`product_${productId}`);
     const currentValue = parseInt(input.value) || 0;
@@ -214,6 +261,32 @@ function updateSummary() {
 // Actualizar resumen al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
     updateSummary();
+    
+    // Manejar productos sin imagen inmediatamente
+    const noImageProducts = document.querySelectorAll('.product-select-no-image');
+    noImageProducts.forEach(noImage => {
+        const productCard = noImage.closest('.product-select-item');
+        const skeleton = productCard.querySelector('.image-skeleton-small');
+        
+        if (skeleton) {
+            skeleton.style.display = 'none';
+            noImage.style.display = 'flex';
+        }
+    });
+    
+    // Optimizar hover performance
+    setTimeout(() => {
+        const productCards = document.querySelectorAll('.product-select-card');
+        productCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.willChange = 'transform, box-shadow, border-color';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.willChange = 'auto';
+            });
+        });
+    }, 500);
 });
 </script>
 {% endblock %}

@@ -8,9 +8,10 @@ from django.urls import reverse
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
+from django.core.cache import cache
 
 from .models import Order, OrderItem, BusinessSettings
-from products.models import Product
+from products.models import Product, Category
 
 @login_required
 def create_order(request):
@@ -213,10 +214,16 @@ def order_step2(request):
             messages.success(request, "Productos seleccionados. Procede a confirmar tu pedido.")
             return redirect('orders:step3')
     
-    # Obtener productos y categorías
-    from products.models import Category
-    categories = Category.objects.all()  # Cambiado: removido is_active=True
-    products = Product.objects.filter(is_available=True).order_by('category', 'name')
+    # Optimizar consultas con select_related y cache
+    categories = cache.get('active_categories')
+    if categories is None:
+        categories = Category.objects.all()
+        cache.set('active_categories', categories, 60 * 15)
+    
+    # Optimizar productos con select_related
+    products = Product.objects.select_related('category').filter(
+        is_available=True
+    ).order_by('category__name', 'name')
     
     # Obtener productos ya seleccionados de la sesión
     selected_items = cart_data.get('items', [])

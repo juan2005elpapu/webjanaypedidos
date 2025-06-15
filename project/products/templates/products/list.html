@@ -2,6 +2,14 @@
 {% load humanize %}
 {% block title %}Productos | Janay Pedidos{% endblock %}
 
+{% block extra_head %}
+{% for product in products|slice:":8" %}
+    {% if product.image %}
+        <link rel="preload" as="image" href="{{ product.image.url }}">
+    {% endif %}
+{% endfor %}
+{% endblock %}
+
 {% block main_content %}
 <div class="mb-6">
     <h1 class="text-2xl font-semibold text-gray-900">Productos</h1>
@@ -11,26 +19,86 @@
 <!-- Filtros por categoría -->
 <div class="categories-filter-container">
     <div class="categories-filter-grid">
-        <a href="{% url 'products:list' %}" class="category-filter {% if not selected_category %}category-filter-active{% else %}category-filter-inactive{% endif %}">
+        <a href="{% url 'products:list' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
+           class="category-filter {% if not selected_category %}category-filter-active{% else %}category-filter-inactive{% endif %}">
             Todos
         </a>
         {% for category in categories %}
-            <a href="{% url 'products:list' %}?category={{ category.slug }}" class="category-filter {% if selected_category == category.slug %}category-filter-active{% else %}category-filter-inactive{% endif %}">
+            <a href="{% url 'products:list' %}?category={{ category.slug }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+               class="category-filter {% if selected_category == category.slug %}category-filter-active{% else %}category-filter-inactive{% endif %}">
                 {{ category.name }}
             </a>
         {% endfor %}
     </div>
 </div>
 
-<!-- Lista de productos -->
-<div class="products-grid">
+<!-- Información de resultados y paginación -->
+{% if products %}
+<div class="flex justify-between items-center mb-4 text-sm text-gray-600">
+    <div class="results-info">
+        {% if page_obj.paginator.count == 1 %}
+            Mostrando 1 producto
+        {% else %}
+            Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} productos
+        {% endif %}
+        {% if selected_category and selected_category_name %}
+            en <strong>{{ selected_category_name }}</strong>
+        {% endif %}
+        {% if search_query %}
+            para <strong>"{{ search_query }}"</strong>
+        {% endif %}
+    </div>
+    
+    <!-- Mini paginador arriba -->
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-mini">
+        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- Skeleton loader inicial -->
+<div id="skeleton-loader" class="products-grid" style="display: grid;">
+    {% for i in "123456789012" %}
+        <div class="product-card-skeleton">
+            <div class="product-skeleton-image">
+                <div class="skeleton-shimmer"></div>
+            </div>
+            <div class="product-skeleton-content">
+                <div class="skeleton-line skeleton-title"></div>
+                <div class="skeleton-line skeleton-category"></div>
+                <div class="skeleton-footer">
+                    <div class="skeleton-line skeleton-price"></div>
+                    <div class="skeleton-button"></div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<!-- Productos reales -->
+<div id="products-grid" class="products-grid" style="display: none;">
     {% for product in products %}
         <div class="product-card">
             <div class="product-card-image">
                 {% if product.image %}
-                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-card-image-container">
+                    <!-- Skeleton individual por imagen -->
+                    <div class="image-skeleton" data-product="{{ product.id }}" style="display: block;">
+                        <div class="skeleton-shimmer"></div>
+                    </div>
+                    <img src="{{ product.image.url }}" 
+                         alt="{{ product.name }}" 
+                         class="product-card-image-container"
+                         loading="{% if forloop.counter <= 8 %}eager{% else %}lazy{% endif %}"
+                         data-product="{{ product.id }}"
+                         data-position="{{ forloop.counter }}"
+                         onload="if(typeof resolveImage === 'function') resolveImage(this, true);"
+                         onerror="if(typeof resolveImage === 'function') resolveImage(this, false);"
+                         style="display: none; opacity: 0;">
                 {% else %}
-                    <div class="product-card-no-image">
+                    <div class="product-card-no-image" style="display: flex;">
+                        <span class="material-icons text-gray-400 text-4xl">bakery_dining</span>
                         <span class="product-card-no-image-text">Sin imagen</span>
                     </div>
                 {% endif %}
@@ -48,8 +116,322 @@
         </div>
     {% empty %}
         <div class="empty-state">
-            <p class="empty-state-text">No hay productos disponibles en esta categoría.</p>
+            <span class="material-icons text-gray-400 text-6xl mb-4">inventory_2</span>
+            <p class="empty-state-text">
+                {% if search_query %}
+                    No se encontraron productos para "{{ search_query }}"
+                    {% if selected_category_name %}en la categoría {{ selected_category_name }}{% endif %}.
+                {% elif selected_category_name %}
+                    No hay productos disponibles en la categoría {{ selected_category_name }}.
+                {% else %}
+                    No hay productos disponibles.
+                {% endif %}
+            </p>
+            {% if search_query or selected_category %}
+                <a href="{% url 'products:list' %}" class="btn-primary mt-4">
+                    Ver todos los productos
+                </a>
+            {% endif %}
         </div>
     {% endfor %}
 </div>
+
+<!-- Paginación principal -->
+{% if page_obj.has_other_pages %}
+<div class="pagination-container">
+    <nav class="pagination" aria-label="Navegación de páginas">
+        <!-- Botón anterior -->
+        {% if page_obj.has_previous %}
+            <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}" 
+               class="pagination-btn pagination-prev">
+                <span class="material-icons">chevron_left</span>
+                Anterior
+            </a>
+        {% else %}
+            <span class="pagination-btn pagination-disabled">
+                <span class="material-icons">chevron_left</span>
+                Anterior
+            </span>
+        {% endif %}
+
+        <!-- Números de página -->
+        <div class="pagination-numbers">
+            {% for page_num in page_obj.paginator.page_range %}
+                {% if page_num == page_obj.number %}
+                    <span class="pagination-btn pagination-current">{{ page_num }}</span>
+                {% elif page_num == 1 or page_num == page_obj.paginator.num_pages or page_num|add:'-2' <= page_obj.number <= page_num|add:'2' %}
+                    <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_num }}" 
+                       class="pagination-btn pagination-number">{{ page_num }}</a>
+                {% elif page_num == 2 and page_obj.number > 4 %}
+                    <span class="pagination-ellipsis">...</span>
+                {% elif page_num == page_obj.paginator.num_pages|add:'-1' and page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
+                    <span class="pagination-ellipsis">...</span>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Botón siguiente -->
+        {% if page_obj.has_next %}
+            <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}" 
+               class="pagination-btn pagination-next">
+                Siguiente
+                <span class="material-icons">chevron_right</span>
+            </a>
+        {% else %}
+            <span class="pagination-btn pagination-disabled">
+                Siguiente
+                <span class="material-icons">chevron_right</span>
+            </span>
+        {% endif %}
+    </nav>
+    
+    <!-- Información adicional de paginación -->
+    <div class="pagination-info">
+        <span class="text-sm text-gray-600">
+            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} 
+            ({{ page_obj.paginator.count }} producto{{ page_obj.paginator.count|pluralize }} en total)
+        </span>
+    </div>
+</div>
+{% endif %}
+
+<!-- DEBUG: Mostrar URLs de imágenes -->
+<div style="display: none;" id="debug-urls">
+    {% for product in products %}
+        {% if product.image %}
+            <div data-product="{{ product.id }}">{{ product.image.url }}</div>
+        {% endif %}
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let startTime = Date.now();
+const MINIMUM_SKELETON_TIME = 500;
+const INDIVIDUAL_IMAGE_TIMEOUT = 3000;
+const MAXIMUM_SKELETON_TIME = 6000;
+let globalSkeletonHidden = false;
+let imageTimeouts = new Map();
+let loadedImagesCount = 0;
+let totalImages = 0;
+let minimumTimeReached = false;
+
+function checkSkeletonReadiness() {
+    if (!minimumTimeReached) return;
+    
+    const eagerImages = document.querySelectorAll('img[loading="eager"][data-product]');
+    const eagerLoaded = Array.from(eagerImages).filter(img => 
+        img.complete || img.naturalWidth > 0 || img.style.opacity === '1'
+    ).length;
+    
+    if (eagerLoaded >= eagerImages.length && eagerImages.length > 0) {
+        hideGlobalSkeleton();
+        return true;
+    }
+    
+    if (eagerImages.length === 0) {
+        hideGlobalSkeleton();
+        return true;
+    }
+    
+    return false;
+}
+
+function resolveImage(img, success) {
+    const productId = img.getAttribute('data-product');
+    const position = img.getAttribute('data-position');
+    const isEager = img.loading === 'eager';
+    
+    if (imageTimeouts.has(productId)) {
+        clearTimeout(imageTimeouts.get(productId));
+        imageTimeouts.delete(productId);
+    }
+    
+    const skeleton = document.querySelector(`[data-product="${productId}"].image-skeleton`);
+    
+    if (skeleton) {
+        skeleton.style.transition = 'opacity 0.2s ease';
+        skeleton.style.opacity = '0';
+        setTimeout(() => {
+            skeleton.style.display = 'none';
+        }, 200);
+    }
+    
+    if (success) {
+        img.style.display = 'block';
+        setTimeout(() => {
+            img.style.transition = 'opacity 0.3s ease';
+            img.style.opacity = '1';
+            
+            if (isEager) {
+                loadedImagesCount++;
+                setTimeout(() => checkSkeletonReadiness(), 100);
+            }
+        }, 10);
+    } else {
+        if (isEager) {
+            loadedImagesCount++;
+            setTimeout(() => checkSkeletonReadiness(), 100);
+        }
+    }
+}
+
+function forceResolveImage(productId) {
+    const img = document.querySelector(`img[data-product="${productId}"]`);
+    if (img) {
+        resolveImage(img, false);
+    }
+}
+
+function hideGlobalSkeleton() {
+    if (globalSkeletonHidden) return;
+    
+    const skeleton = document.getElementById('skeleton-loader');
+    const products = document.getElementById('products-grid');
+    
+    if (skeleton && products) {
+        globalSkeletonHidden = true;
+        
+        skeleton.style.transition = 'opacity 0.3s ease';
+        skeleton.style.opacity = '0';
+        
+        setTimeout(() => {
+            skeleton.style.display = 'none';
+            products.style.display = 'grid';
+            products.style.opacity = '0';
+            
+            setTimeout(() => {
+                products.style.transition = 'opacity 0.4s ease';
+                products.style.opacity = '1';
+            }, 10);
+        }, 300);
+    }
+}
+
+function setupImageTimeouts() {
+    const images = document.querySelectorAll('img[data-product]');
+    const eagerImages = document.querySelectorAll('img[loading="eager"][data-product]');
+    
+    totalImages = eagerImages.length;
+    loadedImagesCount = 0;
+    
+    images.forEach((img, index) => {
+        const productId = img.getAttribute('data-product');
+        const position = img.getAttribute('data-position');
+        const isEager = img.loading === 'eager';
+        
+        if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
+            resolveImage(img, true);
+            return;
+        }
+        
+        if (!isEager) {
+            setTimeout(() => {
+                if (!img.complete && !img.naturalWidth) {
+                    img.loading = 'eager';
+                    window.dispatchEvent(new Event('scroll'));
+                }
+            }, 100);
+        }
+        
+        const timeout = setTimeout(() => {
+            forceResolveImage(productId);
+        }, INDIVIDUAL_IMAGE_TIMEOUT);
+        
+        imageTimeouts.set(productId, timeout);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    startTime = Date.now();
+    globalSkeletonHidden = false;
+    imageTimeouts.clear();
+    loadedImagesCount = 0;
+    totalImages = 0;
+    minimumTimeReached = false;
+    
+    const totalProducts = {{ products|length }};
+    
+    if (totalProducts === 0) {
+        setTimeout(() => {
+            minimumTimeReached = true;
+            hideGlobalSkeleton();
+        }, MINIMUM_SKELETON_TIME);
+        return;
+    }
+    
+    setupImageTimeouts();
+    
+    setTimeout(() => {
+        minimumTimeReached = true;
+        checkSkeletonReadiness();
+    }, MINIMUM_SKELETON_TIME);
+    
+    setTimeout(() => {
+        const stillLazyImages = document.querySelectorAll('img[loading="lazy"][data-product]');
+        stillLazyImages.forEach((img, index) => {
+            const productId = img.getAttribute('data-product');
+            const position = img.getAttribute('data-position');
+            img.loading = 'eager';
+        });
+    }, 400);
+    
+    setTimeout(() => {
+        minimumTimeReached = true;
+        hideGlobalSkeleton();
+    }, MAXIMUM_SKELETON_TIME);
+    
+    setTimeout(() => {
+        imageTimeouts.forEach((timeout, productId) => {
+            clearTimeout(timeout);
+            forceResolveImage(productId);
+        });
+        imageTimeouts.clear();
+    }, INDIVIDUAL_IMAGE_TIMEOUT + 1000);
+});
+
+if ('IntersectionObserver' in window) {
+    const imageObserver = new IntersectionObserver((entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const img = entry.target;
+                const productId = img.getAttribute('data-product');
+                const position = img.getAttribute('data-position');
+                
+                if (!img.complete) {
+                    img.loading = 'eager';
+                    
+                    setTimeout(() => {
+                        if (!img.complete) {
+                            const originalSrc = img.src;
+                            img.src = '';
+                            img.src = originalSrc;
+                        }
+                    }, 20);
+                }
+                
+                observer.unobserve(img);
+            }
+        });
+    }, {
+        rootMargin: '150px',
+        threshold: 0.05
+    });
+    
+    setTimeout(() => {
+        const allImages = document.querySelectorAll('img[data-product]');
+        allImages.forEach(img => {
+            imageObserver.observe(img);
+            const productId = img.getAttribute('data-product');
+            const position = img.getAttribute('data-position');
+        });
+    }, 10);
+}
+
+window.addEventListener('beforeunload', function() {
+    imageTimeouts.forEach(timeout => clearTimeout(timeout));
+    imageTimeouts.clear();
+});
+</script>
 {% endblock %}
