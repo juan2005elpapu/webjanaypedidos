@@ -123,18 +123,14 @@
                          oncontextmenu="window.viewProductDetails && window.viewProductDetails({{ product.id }}); return false;"
                          ontouchstart="window.handleTouchStart && window.handleTouchStart({{ product.id }})"
                          ontouchend="window.handleTouchEnd && window.handleTouchEnd({{ product.id }})">
-                        
+                         
                         <!-- Imagen del producto -->
                         <div class="product-modal-image">
                             {% if product.image %}
                                 <div class="image-skeleton-modal" id="skeleton-{{ product.id }}">
                                     <div class="skeleton-shimmer"></div>
                                 </div>
-                                <img src="{{ product.image.url }}" 
-                                     alt="{{ product.name }}"
-                                     loading="lazy"
-                                     onload="window.imageLoaded && window.imageLoaded({{ product.id }}, '{{ product.image.url|escapejs }}')"
-                                     onerror="window.imageError && window.imageError({{ product.id }}, '{{ product.image.url|escapejs }}')"
+                                <img alt="{{ product.name }}"
                                      style="display: none;"
                                      id="img-{{ product.id }}"
                                      data-src="{{ product.image.url }}">
@@ -190,6 +186,33 @@
                         <p class="text-gray-600">No hay productos disponibles</p>
                     </div>
                 {% endfor %}
+            </div>
+            
+            <!-- PAGINADOR DEL MODAL -->
+            <div class="modal-pagination-container" id="modal-pagination" style="display: none;">
+                <div class="modal-pagination-info">
+                    <span id="pagination-info-text">Mostrando 1-12 de {{ products.count }} productos</span>
+                </div>
+                <div class="modal-pagination-nav">
+                    <button type="button" 
+                            id="prev-page" 
+                            class="modal-pagination-btn modal-pagination-prev modal-pagination-disabled"
+                            disabled>
+                        <span class="material-icons text-sm">chevron_left</span>
+                        Anterior
+                    </button>
+                    
+                    <div class="modal-pagination-numbers" id="pagination-numbers">
+                        <!-- Números generados dinámicamente -->
+                    </div>
+                    
+                    <button type="button" 
+                            id="next-page" 
+                            class="modal-pagination-btn modal-pagination-next">
+                        Siguiente
+                        <span class="material-icons text-sm">chevron_right</span>
+                    </button>
+                </div>
             </div>
         </div>
         
@@ -251,58 +274,138 @@ console.log('📊 Datos cargados:');
 console.log('- Productos:', Object.keys(products).length);
 console.log('- Productos con imagen:', Object.values(products).filter(p => p.imageUrl).length);
 
-// FUNCIONES PARA MANEJO DE IMÁGENES CON LOGS DETALLADOS
+// SISTEMA DE CARGA DE IMÁGENES MEJORADO
+window.ImageLoader = {
+    loadedImages: new Set(),
+    errorImages: new Set(),
+    
+    init() {
+        console.log('🔧 Inicializando ImageLoader...');
+        this.setupIntersectionObserver();
+    },
+    
+    setupIntersectionObserver() {
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const productId = img.id.replace('img-', '');
+                        this.loadImage(productId, img);
+                        observer.unobserve(img);
+                    }
+                });
+            }, {
+                rootMargin: '50px'
+            });
+            
+            // Observar todas las imágenes
+            document.querySelectorAll('img[id^="img-"]').forEach(img => {
+                observer.observe(img);
+            });
+            
+            console.log('👁️ IntersectionObserver configurado');
+        } else {
+            // Fallback para navegadores sin soporte
+            this.loadAllImagesDirectly();
+        }
+    },
+    
+    loadImage(productId, img) {
+        if (this.loadedImages.has(productId) || this.errorImages.has(productId)) {
+            return;
+        }
+        
+        console.log(`🔄 [IMG-LOAD] Iniciando carga producto ${productId}`);
+        
+        const skeleton = document.getElementById(`skeleton-${productId}`);
+        const imageUrl = img.getAttribute('data-src') || img.src;
+        
+        // Crear nueva imagen para pre-cargar
+        const newImg = new Image();
+        
+        newImg.onload = () => {
+            console.log(`✅ [IMG-SUCCESS] Producto ${productId} cargado`);
+            this.loadedImages.add(productId);
+            
+            // Actualizar la imagen original
+            img.src = imageUrl;
+            img.style.display = 'block';
+            img.style.opacity = '1';
+            
+            if (skeleton) {
+                skeleton.style.display = 'none';
+            }
+        };
+        
+        newImg.onerror = () => {
+            console.error(`❌ [IMG-ERROR] Producto ${productId} falló`);
+            this.errorImages.add(productId);
+            this.showErrorPlaceholder(productId);
+        };
+        
+        // Iniciar carga
+        newImg.src = imageUrl;
+        
+        // Timeout de seguridad
+        setTimeout(() => {
+            if (!this.loadedImages.has(productId) && !this.errorImages.has(productId)) {
+                console.warn(`⏰ [IMG-TIMEOUT] Producto ${productId} timeout`);
+                this.showErrorPlaceholder(productId);
+            }
+        }, 5000);
+    },
+    
+    showErrorPlaceholder(productId) {
+        const skeleton = document.getElementById(`skeleton-${productId}`);
+        const imgContainer = skeleton?.parentElement;
+        
+        if (skeleton) {
+            skeleton.style.display = 'none';
+        }
+        
+        if (imgContainer) {
+            imgContainer.innerHTML = `
+                <div class="no-image-placeholder">
+                    <span class="material-icons text-red-400 text-2xl">broken_image</span>
+                    <span class="text-xs text-red-500 mt-1">Error al cargar</span>
+                </div>
+            `;
+        }
+    },
+    
+    loadAllImagesDirectly() {
+        console.log('🔄 Cargando todas las imágenes directamente...');
+        document.querySelectorAll('img[id^="img-"]').forEach(img => {
+            const productId = img.id.replace('img-', '');
+            this.loadImage(productId, img);
+        });
+    },
+    
+    forceLoadVisibleImages() {
+        console.log('🔄 Forzando carga de imágenes visibles...');
+        const modal = document.getElementById('products-modal');
+        if (modal && modal.classList.contains('active')) {
+            document.querySelectorAll('img[id^="img-"]:not([style*="display: block"])').forEach(img => {
+                const productId = img.id.replace('img-', '');
+                this.loadImage(productId, img);
+            });
+        }
+    }
+};
+
+// FUNCIONES SIMPLIFICADAS (mantener compatibilidad)
 window.imageLoaded = function(productId, imageUrl) {
-    console.log(`✅ [IMG-LOAD] Producto ${productId}:`);
-    console.log(`   📷 URL: ${imageUrl}`);
-    console.log(`   ⏱️ Tiempo: ${Date.now()}`);
-    
-    const skeleton = document.getElementById(`skeleton-${productId}`);
-    const img = document.getElementById(`img-${productId}`);
-    
-    if (skeleton) {
-        skeleton.style.display = 'none';
-        console.log(`   🎭 Skeleton ocultado para producto ${productId}`);
-    } else {
-        console.warn(`   ⚠️ No se encontró skeleton para producto ${productId}`);
-    }
-    
-    if (img) {
-        img.style.display = 'block';
-        img.style.opacity = '1';
-        console.log(`   🖼️ Imagen mostrada para producto ${productId}`);
-    } else {
-        console.warn(`   ⚠️ No se encontró elemento img para producto ${productId}`);
-    }
+    // Función mantenida para compatibilidad pero no usada
+    console.log(`✅ [LEGACY] imageLoaded llamada para ${productId}`);
 };
 
 window.imageError = function(productId, imageUrl) {
-    console.error(`❌ [IMG-ERROR] Producto ${productId}:`);
-    console.error(`   📷 URL fallida: ${imageUrl}`);
-    console.error(`   ⏱️ Tiempo: ${Date.now()}`);
-    
-    const skeleton = document.getElementById(`skeleton-${productId}`);
-    const imgContainer = skeleton?.parentElement;
-    
-    if (skeleton) {
-        skeleton.style.display = 'none';
-        console.log(`   🎭 Skeleton ocultado tras error para producto ${productId}`);
-    }
-    
-    if (imgContainer) {
-        imgContainer.innerHTML = `
-            <div class="no-image-placeholder">
-                <span class="material-icons text-red-400 text-2xl">broken_image</span>
-                <span class="text-xs text-red-500 mt-1">Error al cargar</span>
-            </div>
-        `;
-        console.log(`   🔄 Placeholder de error insertado para producto ${productId}`);
-    } else {
-        console.warn(`   ⚠️ No se encontró contenedor de imagen para producto ${productId}`);
-    }
+    // Función mantenida para compatibilidad pero no usada
+    console.log(`❌ [LEGACY] imageError llamada para ${productId}`);
 };
 
-// FUNCIONES DEL MODAL
+// FUNCIONES DEL MODAL ACTUALIZADAS
 window.openModal = function() {
     console.log('📂 Abriendo modal...');
     const modal = document.getElementById('products-modal');
@@ -311,15 +414,10 @@ window.openModal = function() {
         document.body.style.overflow = 'hidden';
         console.log('✅ Modal abierto');
         
-        const pendingImages = document.querySelectorAll('.image-skeleton-modal:not([style*="display: none"])');
-        console.log(`🔄 Imágenes pendientes de cargar: ${pendingImages.length}`);
-        
-        pendingImages.forEach((skeleton, index) => {
-            const productId = skeleton.id.replace('skeleton-', '');
-            const img = document.getElementById(`img-${productId}`);
-            const imageUrl = img?.getAttribute('data-src') || img?.src;
-            console.log(`   ${index + 1}. Producto ${productId} - URL: ${imageUrl}`);
-        });
+        // Forzar carga de imágenes cuando se abre el modal
+        setTimeout(() => {
+            window.ImageLoader.forceLoadVisibleImages();
+        }, 100);
     }
 };
 
@@ -480,15 +578,215 @@ window.showSelectedProductsWithQuantity = function() {
     console.log('📝 TODO: Implementar vista de productos con cantidades');
 };
 
-// FILTROS DE CATEGORÍA
+// SISTEMA DE PAGINACIÓN DEL MODAL
+window.ModalPagination = {
+    itemsPerPage: 12,
+    currentPage: 1,
+    totalItems: 0,
+    totalPages: 0,
+    allProducts: [],
+    filteredProducts: [],
+    
+    init() {
+        console.log('📄 Inicializando paginación del modal...');
+        
+        this.allProducts = Array.from(document.querySelectorAll('.product-modal-card'));
+        this.filteredProducts = [...this.allProducts];
+        this.totalItems = this.allProducts.length;
+        this.calculatePages();
+        this.setupEventListeners();
+        this.showPaginationIfNeeded();
+        this.showPage(1);
+        
+        console.log(`📊 Paginación configurada: ${this.totalItems} productos, ${this.totalPages} páginas`);
+    },
+    
+    calculatePages() {
+        this.totalPages = Math.ceil(this.filteredProducts.length / this.itemsPerPage);
+    },
+    
+    setupEventListeners() {
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+        }
+    },
+    
+    showPaginationIfNeeded() {
+        const paginationContainer = document.getElementById('modal-pagination');
+        if (paginationContainer) {
+            paginationContainer.style.display = this.totalPages > 1 ? 'flex' : 'none';
+        }
+    },
+    
+    applyFilter(categoryFilter = '', searchQuery = '') {
+        console.log(`🔍 Aplicando filtros - Categoría: "${categoryFilter}", Búsqueda: "${searchQuery}"`);
+        
+        this.filteredProducts = this.allProducts.filter(card => {
+            const cardCategory = card.getAttribute('data-category');
+            const cardName = card.getAttribute('data-name');
+            
+            // Filtro de categoría
+            const categoryMatch = !categoryFilter || cardCategory === categoryFilter;
+            
+            // Filtro de búsqueda
+            const searchMatch = !searchQuery || cardName.includes(searchQuery.toLowerCase());
+            
+            return categoryMatch && searchMatch;
+        });
+        
+        this.calculatePages();
+        this.showPaginationIfNeeded();
+        this.goToPage(1);
+        
+        console.log(`📊 Filtros aplicados: ${this.filteredProducts.length} productos visibles`);
+    },
+    
+    showPage(page) {
+        if (page < 1 || page > this.totalPages) return;
+        
+        console.log(`📄 Mostrando página ${page} de ${this.totalPages}`);
+        
+        this.currentPage = page;
+        const start = (page - 1) * this.itemsPerPage;
+        const end = start + this.itemsPerPage;
+        
+        // Ocultar todos los productos
+        this.allProducts.forEach(card => {
+            card.style.display = 'none';
+        });
+        
+        // Mostrar solo los productos de la página actual y que coincidan con filtros
+        this.filteredProducts.slice(start, end).forEach(card => {
+            card.style.display = 'block';
+        });
+        
+        this.updatePaginationUI();
+        this.updateInfoText();
+        
+        // Cargar imágenes de la página actual
+        if (window.ImageLoader) {
+            setTimeout(() => {
+                window.ImageLoader.forceLoadVisibleImages();
+            }, 100);
+        }
+    },
+    
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.showPage(page);
+        }
+    },
+    
+    updatePaginationUI() {
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        
+        // Actualizar botones anterior/siguiente
+        if (prevBtn) {
+            prevBtn.disabled = this.currentPage === 1;
+            prevBtn.className = `modal-pagination-btn modal-pagination-prev ${
+                this.currentPage === 1 ? 'modal-pagination-disabled' : ''
+            }`;
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = this.currentPage === this.totalPages;
+            nextBtn.className = `modal-pagination-btn modal-pagination-next ${
+                this.currentPage === this.totalPages ? 'modal-pagination-disabled' : ''
+            }`;
+        }
+        
+        // Actualizar números de página
+        this.updatePageNumbers();
+    },
+    
+    updatePageNumbers() {
+        const numbersContainer = document.getElementById('pagination-numbers');
+        if (!numbersContainer) return;
+        
+        numbersContainer.innerHTML = '';
+        
+        const maxVisiblePages = 5;
+        let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+        let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
+        
+        // Ajustar inicio si no hay suficientes páginas al final
+        if (endPage - startPage + 1 < maxVisiblePages) {
+            startPage = Math.max(1, endPage - maxVisiblePages + 1);
+        }
+        
+        // Página 1 si no está visible
+        if (startPage > 1) {
+            numbersContainer.appendChild(this.createPageButton(1));
+            if (startPage > 2) {
+                numbersContainer.appendChild(this.createEllipsis());
+            }
+        }
+        
+        // Páginas del rango visible
+        for (let i = startPage; i <= endPage; i++) {
+            numbersContainer.appendChild(this.createPageButton(i));
+        }
+        
+        // Última página si no está visible
+        if (endPage < this.totalPages) {
+            if (endPage < this.totalPages - 1) {
+                numbersContainer.appendChild(this.createEllipsis());
+            }
+            numbersContainer.appendChild(this.createPageButton(this.totalPages));
+        }
+    },
+    
+    createPageButton(pageNumber) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = pageNumber;
+        button.className = `modal-pagination-number ${
+            pageNumber === this.currentPage ? 'modal-pagination-current' : ''
+        }`;
+        button.addEventListener('click', () => this.goToPage(pageNumber));
+        return button;
+    },
+    
+    createEllipsis() {
+        const span = document.createElement('span');
+        span.textContent = '...';
+        span.className = 'px-2 py-1 text-xs text-gray-500';
+        return span;
+    },
+    
+    updateInfoText() {
+        const infoElement = document.getElementById('pagination-info-text');
+        if (!infoElement) return;
+        
+        const start = ((this.currentPage - 1) * this.itemsPerPage) + 1;
+        const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredProducts.length);
+        const total = this.filteredProducts.length;
+        
+        if (total === 0) {
+            infoElement.textContent = 'No hay productos';
+        } else if (total === 1) {
+            infoElement.textContent = 'Mostrando 1 producto';
+        } else {
+            infoElement.textContent = `Mostrando ${start}-${end} de ${total} productos`;
+        }
+    }
+};
+
+// ACTUALIZAR FILTROS PARA USAR PAGINACIÓN
 window.setupCategoryFilters = function() {
     console.log('🏷️ Configurando filtros de categoría...');
     
     const filterButtons = document.querySelectorAll('.category-filter-modal');
-    const productCards = document.querySelectorAll('.product-modal-card');
     
     console.log(`📊 Filtros encontrados: ${filterButtons.length}`);
-    console.log(`📦 Cards de productos: ${productCards.length}`);
     
     filterButtons.forEach(button => {
         button.addEventListener('click', function(e) {
@@ -501,56 +799,24 @@ window.setupCategoryFilters = function() {
             filterButtons.forEach(btn => btn.classList.remove('active'));
             this.classList.add('active');
             
-            // Filtrar productos
-            let visibleCount = 0;
-            productCards.forEach(card => {
-                const cardCategory = card.getAttribute('data-category');
-                const shouldShow = !selectedCategory || cardCategory === selectedCategory;
-                
-                if (shouldShow) {
-                    card.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    card.style.display = 'none';
-                }
-            });
-            
-            console.log(`👁️ Productos visibles: ${visibleCount}/${productCards.length}`);
-            
-            // Mostrar mensaje si no hay productos
-            window.updateEmptyState(visibleCount === 0);
+            // Aplicar filtro con paginación
+            const searchQuery = document.getElementById('product-search')?.value || '';
+            window.ModalPagination.applyFilter(selectedCategory, searchQuery);
         });
     });
     
     console.log('✅ Filtros de categoría configurados');
 };
 
-window.updateEmptyState = function(isEmpty) {
-    const grid = document.getElementById('products-grid-modal');
-    let emptyMessage = document.getElementById('empty-filter-message');
-    
-    if (isEmpty) {
-        if (!emptyMessage) {
-            emptyMessage = document.createElement('div');
-            emptyMessage.id = 'empty-filter-message';
-            emptyMessage.className = 'empty-products-message';
-            emptyMessage.innerHTML = `
-                <span class="material-icons text-gray-400 text-4xl mb-2">filter_list_off</span>
-                <p class="text-gray-600">No hay productos en esta categoría</p>
-            `;
-            grid.appendChild(emptyMessage);
-        }
-        emptyMessage.style.display = 'flex';
-    } else {
-        if (emptyMessage) {
-            emptyMessage.style.display = 'none';
-        }
-    }
-};
-
-// Event listeners
+// ACTUALIZAR EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Configurando event listeners...');
+    
+    // Inicializar sistema de imágenes
+    window.ImageLoader.init();
+    
+    // Inicializar paginación
+    window.ModalPagination.init();
     
     const allImages = document.querySelectorAll('img[id^="img-"]');
     console.log(`🖼️ Total de imágenes en el DOM: ${allImages.length}`);
@@ -558,11 +824,7 @@ document.addEventListener('DOMContentLoaded', function() {
     allImages.forEach((img, index) => {
         const productId = img.id.replace('img-', '');
         const imageUrl = img.src || img.getAttribute('data-src');
-        console.log(`   ${index + 1}. Producto ${productId} - URL: ${imageUrl} - Estado: ${img.complete ? 'Cargada' : 'Pendiente'}`);
-        
-        if (img.complete && img.naturalHeight !== 0) {
-            window.imageLoaded(productId, imageUrl);
-        }
+        console.log(`   ${index + 1}. Producto ${productId} - URL: ${imageUrl}`);
     });
     
     const addBtn = document.getElementById('add-products-btn');
