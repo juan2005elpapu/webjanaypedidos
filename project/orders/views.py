@@ -223,7 +223,7 @@ def order_step2(request):
         'step_title': 'Selección de Productos',
         'step_description': 'Elige los productos que deseas pedir',
         'all_steps': all_steps,
-        'next_step_text': 'Continuar a Confirmación',
+        'next_step_text': 'Continuar a pago',
         'previous_step_url': reverse('orders:step1'),
     }
     

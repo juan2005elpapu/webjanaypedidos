@@ -2,7 +2,6 @@
 {% load humanize %}
 
 {% block step_content %}
-<!-- CSS DEL MODAL ELIMINADO - Ahora en styles.css -->
 <form method="post" id="step-form" class="p-4 md:p-6">
     {% csrf_token %}
     
@@ -17,7 +16,6 @@
                     <h3 class="text-base md:text-lg font-medium text-gray-900 mb-2">Selecciona tus productos</h3>
                     <p class="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Haz clic en el botón para explorar nuestro menú</p>
                     
-                    <!-- Botón con funcionalidad CORREGIDO -->
                     <button type="button" 
                             id="add-products-btn" 
                             class="btn-add-products">
@@ -28,7 +26,7 @@
             </div>
         </div>
         
-        <!-- Resumen del pedido - RESTAURADO AL ORIGINAL -->
+        <!-- Resumen del pedido -->
         <div class="step2-summary-section">
             <div class="order-summary">
                 <h3 class="order-summary-title">
@@ -121,52 +119,75 @@
                          data-product-id="{{ product.id }}"
                          data-category="{{ product.category.slug }}"
                          data-name="{{ product.name|lower }}"
-                         data-description="{{ product.description|lower|default:'' }}">
+                         onclick="window.handleProductClick && window.handleProductClick({{ product.id }})"
+                         oncontextmenu="window.viewProductDetails && window.viewProductDetails({{ product.id }}); return false;"
+                         ontouchstart="window.handleTouchStart && window.handleTouchStart({{ product.id }})"
+                         ontouchend="window.handleTouchEnd && window.handleTouchEnd({{ product.id }})">
                         
+                        <!-- Imagen del producto -->
                         <div class="product-modal-image">
                             {% if product.image %}
-                                <div class="image-skeleton-modal"></div>
+                                <div class="image-skeleton-modal" id="skeleton-{{ product.id }}">
+                                    <div class="skeleton-shimmer"></div>
+                                </div>
                                 <img src="{{ product.image.url }}" 
                                      alt="{{ product.name }}"
                                      loading="lazy"
-                                     onload="this.style.display='block'; this.previousElementSibling.style.display='none';"
-                                     style="display: none;">
+                                     onload="window.imageLoaded && window.imageLoaded({{ product.id }}, '{{ product.image.url|escapejs }}')"
+                                     onerror="window.imageError && window.imageError({{ product.id }}, '{{ product.image.url|escapejs }}')"
+                                     style="display: none;"
+                                     id="img-{{ product.id }}"
+                                     data-src="{{ product.image.url }}">
                             {% else %}
-                                <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-                                    <span class="material-icons" style="color: #9ca3af; font-size: 2rem;">bakery_dining</span>
+                                <div class="no-image-placeholder">
+                                    <span class="material-icons text-gray-400 text-2xl">bakery_dining</span>
+                                    <span class="text-xs text-gray-500 mt-1">Sin imagen</span>
                                 </div>
                             {% endif %}
                         </div>
                         
+                        <!-- Información del producto -->
                         <div class="product-modal-info">
-                            <h4>{{ product.name }}</h4>
-                            <div class="product-modal-price">${{ product.price|floatformat:0|intcomma }}</div>
-                            {% if product.description %}
-                                <p class="product-modal-description">{{ product.description|truncatewords:10 }}</p>
-                            {% endif %}
+                            <!-- Nombre y peso en la misma línea -->
+                            <div class="product-name-weight">
+                                <h4>{{ product.name }}</h4>
+                                {% if product.weight %}
+                                    <div class="product-modal-weight">{{ product.weight }}g</div>
+                                {% endif %}
+                            </div>
                             
-                            <div class="product-modal-controls">
-                                <button type="button" class="modal-quantity-btn" onclick="window.decreaseModalQuantity && window.decreaseModalQuantity({{ product.id }})">
-                                    <span class="material-icons">remove</span>
-                                </button>
-                                <input type="number" 
-                                       class="modal-quantity-input"
-                                       id="modal-product-{{ product.id }}"
-                                       value="0"
-                                       min="0"
-                                       max="50"
-                                       onchange="window.updateModalQuantity && window.updateModalQuantity({{ product.id }})">
-                                <button type="button" class="modal-quantity-btn" onclick="window.increaseModalQuantity && window.increaseModalQuantity({{ product.id }})">
-                                    <span class="material-icons">add</span>
-                                </button>
+                            <!-- Precio abajo -->
+                            <div class="product-modal-price">${{ product.price|floatformat:0|intcomma }}</div>
+                        </div>
+
+                        
+                        <!-- Badge de seleccionado -->
+                        <div class="selected-badge" id="badge-{{ product.id }}" style="display: none;">
+                            <span class="material-icons">check</span>
+                        </div>
+                        
+                        <!-- Estados de interacción -->
+                        <div class="product-states">
+                            <div class="state-normal" id="state-normal-{{ product.id }}">
+                                <span class="material-icons">add_circle</span>
+                                <span>Agregar</span>
+                            </div>
+                            <div class="state-selected" id="state-selected-{{ product.id }}" style="display: none;">
+                                <span class="material-icons">check_circle</span>
+                                <span>Agregado</span>
                             </div>
                         </div>
                         
-                        <div class="selected-count" id="count-{{ product.id }}" style="display: none;">0</div>
+                        <!-- Botón de detalles para móvil -->
+                        <button class="mobile-details-btn lg:hidden" 
+                                onclick="event.stopPropagation(); window.viewProductDetails && window.viewProductDetails({{ product.id }})">
+                            <span class="material-icons">info</span>
+                        </button>
                     </div>
                 {% empty %}
-                    <div style="grid-column: 1 / -1; text-align: center; padding: 2rem;">
-                        <p style="color: #6b7280;">No hay productos disponibles</p>
+                    <div class="empty-products-message">
+                        <span class="material-icons text-gray-400 text-4xl mb-2">inventory_2</span>
+                        <p class="text-gray-600">No hay productos disponibles</p>
                     </div>
                 {% endfor %}
             </div>
@@ -175,7 +196,23 @@
         <!-- Footer -->
         <div class="modal-footer">
             <div class="modal-footer-info">
-                <span id="selected-items-count">0</span> productos seleccionados
+                <div class="mb-2">
+                    <span id="selected-items-count">0</span> productos agregados
+                </div>
+                
+                <!-- Caja informativa en el footer -->
+                <div class="footer-info-box">
+                    <div class="flex items-center gap-2">
+                        <span class="material-icons text-blue-600">bookmark</span>
+                        <div class="flex-1">
+                            <span class="font-semibold text-blue-900">Detalles:</span>
+                            <div class="text-xs text-blue-800">
+                                <span class="responsive-text-mobile">Mantén presionado un producto para ver sus detalles</span>
+                                <span class="responsive-text-desktop">Click derecho en un producto para ver sus detalles</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer-actions">
                 <button type="button" id="clear-selection" class="btn-clear-selection">Limpiar todo</button>
@@ -190,28 +227,14 @@
 <script>
 console.log('🚀 Step 2 JavaScript iniciando...');
 
-// Test inmediato para verificar que el script se ejecuta
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM cargado primero');
-    
-    // Actualizar indicador de JS cargado inmediatamente
-    const jsTestElement = document.getElementById('js-test');
-    if (jsTestElement) {
-        jsTestElement.textContent = '✅ JS cargado correctamente';
-        jsTestElement.className = 'text-green-600 font-semibold';
-    }
-});
-
-// DATOS BÁSICOS - CORREGIDO EL ERROR DE SINTAXIS
-console.log('📊 Cargando datos de productos...');
-
-// CORREGIR: Generar el JSON de productos de forma segura
+// DATOS BÁSICOS
 const products = {
 {% for product in products %}
     "{{ product.id }}": {
         "name": "{{ product.name|escapejs }}",
         "price": {{ product.price|default:0|floatformat:0 }},
-        "category": "{{ product.category.name|escapejs }}"
+        "category": "{{ product.category.name|escapejs }}",
+        "imageUrl": "{% if product.image %}{{ product.image.url|escapejs }}{% endif %}"
     }{% if not forloop.last %},{% endif %}
 {% endfor %}
 };
@@ -221,33 +244,87 @@ const settings = {
     "freeDeliveryThreshold": {{ settings.free_delivery_threshold|default:50000|floatformat:0 }}
 };
 
-let selectedProducts = {};
+let selectedProducts = new Set();
+let touchTimers = new Map();
 
 console.log('📊 Datos cargados:');
 console.log('- Productos:', Object.keys(products).length);
-console.log('- Products object:', products);
-console.log('- Settings:', settings);
+console.log('- Productos con imagen:', Object.values(products).filter(p => p.imageUrl).length);
 
-// DECLARAR FUNCIONES GLOBALMENTE
-console.log('🔧 Declarando funciones globales...');
-
-window.openModal = function() {
-    console.log('📂 openModal() ejecutada');
-    const modal = document.getElementById('products-modal');
-    console.log('Modal encontrado:', !!modal);
+// FUNCIONES PARA MANEJO DE IMÁGENES CON LOGS DETALLADOS
+window.imageLoaded = function(productId, imageUrl) {
+    console.log(`✅ [IMG-LOAD] Producto ${productId}:`);
+    console.log(`   📷 URL: ${imageUrl}`);
+    console.log(`   ⏱️ Tiempo: ${Date.now()}`);
     
+    const skeleton = document.getElementById(`skeleton-${productId}`);
+    const img = document.getElementById(`img-${productId}`);
+    
+    if (skeleton) {
+        skeleton.style.display = 'none';
+        console.log(`   🎭 Skeleton ocultado para producto ${productId}`);
+    } else {
+        console.warn(`   ⚠️ No se encontró skeleton para producto ${productId}`);
+    }
+    
+    if (img) {
+        img.style.display = 'block';
+        img.style.opacity = '1';
+        console.log(`   🖼️ Imagen mostrada para producto ${productId}`);
+    } else {
+        console.warn(`   ⚠️ No se encontró elemento img para producto ${productId}`);
+    }
+};
+
+window.imageError = function(productId, imageUrl) {
+    console.error(`❌ [IMG-ERROR] Producto ${productId}:`);
+    console.error(`   📷 URL fallida: ${imageUrl}`);
+    console.error(`   ⏱️ Tiempo: ${Date.now()}`);
+    
+    const skeleton = document.getElementById(`skeleton-${productId}`);
+    const imgContainer = skeleton?.parentElement;
+    
+    if (skeleton) {
+        skeleton.style.display = 'none';
+        console.log(`   🎭 Skeleton ocultado tras error para producto ${productId}`);
+    }
+    
+    if (imgContainer) {
+        imgContainer.innerHTML = `
+            <div class="no-image-placeholder">
+                <span class="material-icons text-red-400 text-2xl">broken_image</span>
+                <span class="text-xs text-red-500 mt-1">Error al cargar</span>
+            </div>
+        `;
+        console.log(`   🔄 Placeholder de error insertado para producto ${productId}`);
+    } else {
+        console.warn(`   ⚠️ No se encontró contenedor de imagen para producto ${productId}`);
+    }
+};
+
+// FUNCIONES DEL MODAL
+window.openModal = function() {
+    console.log('📂 Abriendo modal...');
+    const modal = document.getElementById('products-modal');
     if (modal) {
-        console.log('✅ Mostrando modal...');
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        console.log('✅ Modal visible');
-    } else {
-        console.error('❌ Modal no encontrado');
+        console.log('✅ Modal abierto');
+        
+        const pendingImages = document.querySelectorAll('.image-skeleton-modal:not([style*="display: none"])');
+        console.log(`🔄 Imágenes pendientes de cargar: ${pendingImages.length}`);
+        
+        pendingImages.forEach((skeleton, index) => {
+            const productId = skeleton.id.replace('skeleton-', '');
+            const img = document.getElementById(`img-${productId}`);
+            const imageUrl = img?.getAttribute('data-src') || img?.src;
+            console.log(`   ${index + 1}. Producto ${productId} - URL: ${imageUrl}`);
+        });
     }
 };
 
 window.closeModal = function() {
-    console.log('🔒 closeModal() ejecutada');
+    console.log('🔒 Cerrando modal...');
     const modal = document.getElementById('products-modal');
     if (modal) {
         modal.classList.remove('active');
@@ -256,81 +333,100 @@ window.closeModal = function() {
     }
 };
 
-window.increaseModalQuantity = function(productId) {
-    console.log('➕ Aumentando cantidad para producto:', productId);
-    const input = document.getElementById(`modal-product-${productId}`);
-    if (input) {
-        const current = parseInt(input.value) || 0;
-        if (current < 50) {
-            input.value = current + 1;
-            window.updateModalQuantity(productId);
+window.viewProductDetails = function(productId) {
+    console.log('🔍 Ver detalles del producto:', productId);
+    const detailUrl = `/products/${productId}/`;
+    window.open(detailUrl, '_blank');
+};
+
+window.handleTouchStart = function(productId) {
+    console.log('👆 Touch start:', productId);
+    
+    const timer = setTimeout(() => {
+        console.log('⏰ Long press detectado:', productId);
+        window.viewProductDetails(productId);
+        if (navigator.vibrate) {
+            navigator.vibrate(50);
         }
+    }, 500);
+    
+    touchTimers.set(productId, timer);
+};
+
+window.handleTouchEnd = function(productId) {
+    console.log('👆 Touch end:', productId);
+    
+    const timer = touchTimers.get(productId);
+    if (timer) {
+        clearTimeout(timer);
+        touchTimers.delete(productId);
     }
 };
 
-window.decreaseModalQuantity = function(productId) {
-    console.log('➖ Disminuyendo cantidad para producto:', productId);
-    const input = document.getElementById(`modal-product-${productId}`);
-    if (input) {
-        const current = parseInt(input.value) || 0;
-        if (current > 0) {
-            input.value = current - 1;
-            window.updateModalQuantity(productId);
-        }
+window.handleProductClick = function(productId) {
+    console.log('🖱️ Product click:', productId);
+    
+    const timer = touchTimers.get(productId);
+    if (timer) {
+        clearTimeout(timer);
+        touchTimers.delete(productId);
     }
+    
+    window.toggleProductSelection(productId);
 };
 
-window.updateModalQuantity = function(productId) {
-    console.log('🔄 Actualizando cantidad para producto:', productId);
-    const input = document.getElementById(`modal-product-${productId}`);
-    const quantity = parseInt(input.value) || 0;
+window.toggleProductSelection = function(productId) {
+    console.log('🔄 Toggle selección producto:', productId);
     const card = document.querySelector(`[data-product-id="${productId}"]`);
-    const countBadge = document.getElementById(`count-${productId}`);
+    const badge = document.getElementById(`badge-${productId}`);
+    const stateNormal = document.getElementById(`state-normal-${productId}`);
+    const stateSelected = document.getElementById(`state-selected-${productId}`);
     
-    console.log('Nueva cantidad:', quantity);
-    
-    if (quantity > 0) {
-        selectedProducts[productId] = quantity;
-        card?.classList.add('selected');
-        if (countBadge) {
-            countBadge.style.display = 'flex';
-            countBadge.textContent = quantity;
-        }
-    } else {
-        delete selectedProducts[productId];
+    if (selectedProducts.has(productId)) {
+        selectedProducts.delete(productId);
         card?.classList.remove('selected');
-        if (countBadge) {
-            countBadge.style.display = 'none';
-        }
+        if (badge) badge.style.display = 'none';
+        if (stateNormal) stateNormal.style.display = 'flex';
+        if (stateSelected) stateSelected.style.display = 'none';
+        console.log('❌ Producto removido:', productId);
+    } else {
+        selectedProducts.add(productId);
+        card?.classList.add('selected');
+        if (badge) badge.style.display = 'flex';
+        if (stateNormal) stateNormal.style.display = 'none';
+        if (stateSelected) stateSelected.style.display = 'flex';
+        console.log('✅ Producto agregado:', productId);
     }
     
     window.updateSelectedCount();
-    console.log('Productos seleccionados:', selectedProducts);
 };
 
 window.updateSelectedCount = function() {
-    const count = Object.keys(selectedProducts).length;
+    const count = selectedProducts.size;
     const element = document.getElementById('selected-items-count');
     if (element) {
         element.textContent = count;
     }
-    console.log('Total productos seleccionados:', count);
+    console.log('📊 Total productos seleccionados:', count);
 };
 
 window.clearSelection = function() {
     console.log('🧹 Limpiando selección...');
-    selectedProducts = {};
-    
-    document.querySelectorAll('.modal-quantity-input').forEach(input => {
-        input.value = 0;
-    });
+    selectedProducts.clear();
     
     document.querySelectorAll('.product-modal-card').forEach(card => {
         card.classList.remove('selected');
     });
     
-    document.querySelectorAll('.selected-count').forEach(badge => {
+    document.querySelectorAll('.selected-badge').forEach(badge => {
         badge.style.display = 'none';
+    });
+    
+    document.querySelectorAll('.state-normal').forEach(state => {
+        state.style.display = 'flex';
+    });
+    document.querySelectorAll('.state-selected').forEach(state => {
+        state.style.display = 'none';
     });
     
     window.updateSelectedCount();
@@ -339,99 +435,155 @@ window.clearSelection = function() {
 
 window.applySelection = function() {
     console.log('✅ Aplicando selección...');
-    console.log('Productos a aplicar:', selectedProducts);
+    console.log('Productos seleccionados:', Array.from(selectedProducts));
     
-    window.updateMainSummary();
-    window.updateHiddenInputs();
-    window.closeModal();
-    
-    if (Object.keys(selectedProducts).length > 0) {
-        window.updateMainProductsSection();
+    if (selectedProducts.size === 0) {
+        alert('Debes seleccionar al menos un producto');
+        return;
     }
+    
+    window.updateMainProductsSection();
+    window.closeModal();
     
     console.log('✅ Selección aplicada');
 };
 
 window.updateMainProductsSection = function() {
     const container = document.querySelector('.empty-products-container');
-    const count = Object.keys(selectedProducts).length;
+    const count = selectedProducts.size;
     
     console.log('🔄 Actualizando sección principal. Productos:', count);
     
-    if (container) {
+    if (container && count > 0) {
         container.innerHTML = `
             <div class="text-center">
                 <div class="mx-auto flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6">
                     <span class="material-icons text-green-600 text-3xl md:text-4xl">check_circle</span>
                 </div>
-                <h3 class="text-base md:text-lg font-medium text-gray-900 mb-2">${count} producto${count > 1 ? 's' : ''} seleccionado${count > 1 ? 's' : ''}</h3>
-                <p class="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Puedes modificar las cantidades haciendo clic en el botón</p>
+                <h3 class="text-base md:text-lg font-medium text-gray-900 mb-2">${count} producto${count > 1 ? 's' : ''} agregado${count > 1 ? 's' : ''}</h3>
+                <p class="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Ahora puedes ajustar las cantidades de cada producto</p>
                 <button type="button" 
                         class="btn-modify-products"
                         onclick="window.openModal();">
                     <span class="material-icons mr-2">edit</span>
-                    Modificar Productos
+                    Modificar Selección
                 </button>
             </div>
         `;
+        
+        window.showSelectedProductsWithQuantity();
         console.log('✅ Sección principal actualizada');
     }
 };
 
-window.updateMainSummary = function() {
-    console.log('🔄 Actualizando resumen principal...');
-    // Esta función se implementará después de corregir el error principal
+window.showSelectedProductsWithQuantity = function() {
+    console.log('📝 TODO: Implementar vista de productos con cantidades');
 };
 
-window.updateHiddenInputs = function() {
-    console.log('🔄 Actualizando inputs hidden...');
-    // Esta función se implementará después de corregir el error principal
+// FILTROS DE CATEGORÍA
+window.setupCategoryFilters = function() {
+    console.log('🏷️ Configurando filtros de categoría...');
+    
+    const filterButtons = document.querySelectorAll('.category-filter-modal');
+    const productCards = document.querySelectorAll('.product-modal-card');
+    
+    console.log(`📊 Filtros encontrados: ${filterButtons.length}`);
+    console.log(`📦 Cards de productos: ${productCards.length}`);
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const selectedCategory = this.getAttribute('data-category');
+            console.log(`🔄 Filtro seleccionado: "${selectedCategory || 'Todos'}"`);
+            
+            // Actualizar estado activo de los botones
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Filtrar productos
+            let visibleCount = 0;
+            productCards.forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                const shouldShow = !selectedCategory || cardCategory === selectedCategory;
+                
+                if (shouldShow) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            console.log(`👁️ Productos visibles: ${visibleCount}/${productCards.length}`);
+            
+            // Mostrar mensaje si no hay productos
+            window.updateEmptyState(visibleCount === 0);
+        });
+    });
+    
+    console.log('✅ Filtros de categoría configurados');
 };
 
-// Verificar que las funciones están disponibles globalmente
-console.log('🔍 Verificando funciones globales:');
-console.log('- window.openModal:', typeof window.openModal);
-console.log('- window.closeModal:', typeof window.closeModal);
+window.updateEmptyState = function(isEmpty) {
+    const grid = document.getElementById('products-grid-modal');
+    let emptyMessage = document.getElementById('empty-filter-message');
+    
+    if (isEmpty) {
+        if (!emptyMessage) {
+            emptyMessage = document.createElement('div');
+            emptyMessage.id = 'empty-filter-message';
+            emptyMessage.className = 'empty-products-message';
+            emptyMessage.innerHTML = `
+                <span class="material-icons text-gray-400 text-4xl mb-2">filter_list_off</span>
+                <p class="text-gray-600">No hay productos en esta categoría</p>
+            `;
+            grid.appendChild(emptyMessage);
+        }
+        emptyMessage.style.display = 'flex';
+    } else {
+        if (emptyMessage) {
+            emptyMessage.style.display = 'none';
+        }
+    }
+};
 
-// Configurar event listeners cuando el DOM esté listo
+// Event listeners
 document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Configurando event listeners...');
     
-    // Botón principal
-    const addBtn = document.getElementById('add-products-btn');
-    console.log('🔍 Botón encontrado:', !!addBtn);
+    const allImages = document.querySelectorAll('img[id^="img-"]');
+    console.log(`🖼️ Total de imágenes en el DOM: ${allImages.length}`);
     
+    allImages.forEach((img, index) => {
+        const productId = img.id.replace('img-', '');
+        const imageUrl = img.src || img.getAttribute('data-src');
+        console.log(`   ${index + 1}. Producto ${productId} - URL: ${imageUrl} - Estado: ${img.complete ? 'Cargada' : 'Pendiente'}`);
+        
+        if (img.complete && img.naturalHeight !== 0) {
+            window.imageLoaded(productId, imageUrl);
+        }
+    });
+    
+    const addBtn = document.getElementById('add-products-btn');
     if (addBtn) {
         addBtn.addEventListener('click', function(e) {
-            console.log('🎯 CLICK DETECTADO en botón añadir productos');
             e.preventDefault();
-            e.stopPropagation();
             window.openModal();
         });
-        console.log('✅ Event listener configurado en botón principal');
-    } else {
-        console.error('❌ Botón principal NO encontrado');
+        console.log('✅ Botón principal configurado');
     }
     
-    // Otros botones del modal
     const closeBtn = document.getElementById('close-modal');
     const applyBtn = document.getElementById('apply-selection');
     const clearBtn = document.getElementById('clear-selection');
     
-    if (closeBtn) {
-        closeBtn.addEventListener('click', window.closeModal);
-        console.log('✅ Botón cerrar configurado');
-    }
+    if (closeBtn) closeBtn.addEventListener('click', window.closeModal);
+    if (applyBtn) applyBtn.addEventListener('click', window.applySelection);
+    if (clearBtn) clearBtn.addEventListener('click', window.clearSelection);
     
-    if (applyBtn) {
-        applyBtn.addEventListener('click', window.applySelection);
-        console.log('✅ Botón aplicar configurado');
-    }
-    
-    if (clearBtn) {
-        clearBtn.addEventListener('click', window.clearSelection);
-        console.log('✅ Botón limpiar configurado');
-    }
+    // Configurar filtros de categoría
+    window.setupCategoryFilters();
     
     console.log('🎯 Inicialización completa');
 });
