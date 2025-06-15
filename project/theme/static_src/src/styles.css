@@ -624,10 +624,6 @@ input[type="password"]::-ms-clear {
     @apply flex-wrap;
   }
   
-  .pagination-numbers {
-    @apply hidden;
-  }
-  
   .pagination-btn {
     @apply px-2 py-1 text-xs;
   }

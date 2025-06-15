@@ -2147,10 +2147,6 @@ input[type="password"]::-ms-clear {
   filter: invert(100%) brightness(100%);
 }
 
-.visible {
-  visibility: visible;
-}
-
 .collapse {
   visibility: collapse;
 }
@@ -2954,10 +2950,6 @@ input[type="password"]::-ms-clear {
 @media (max-width: 640px) {
   .pagination {
     flex-wrap: wrap;
-  }
-
-  .pagination-numbers {
-    display: none;
   }
 
   .pagination-btn {
