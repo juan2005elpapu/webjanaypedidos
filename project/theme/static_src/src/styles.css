@@ -475,26 +475,31 @@
     @apply font-bold text-xl text-orange-700;
   }
 
-  /* GRID DEL STEP 2 */
+  /* GRID DEL STEP 2 - MEJORADO PARA LAPTOPS */
   .step2-grid {
-    @apply grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6;
+    @apply grid grid-cols-1 lg:grid-cols-5 xl:grid-cols-7 gap-4 md:gap-6;
   }
 
   .step2-products-section {
-    @apply col-span-1 lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply col-span-1 lg:col-span-3 xl:col-span-5 bg-white rounded-lg shadow-sm border border-gray-200;
   }
 
   .step2-summary-section {
-    @apply col-span-1;
+    @apply col-span-1 lg:col-span-2 xl:col-span-2;
   }
 
   .empty-products-container {
     @apply min-h-80 lg:min-h-96 flex items-center justify-center p-4 md:p-8;
   }
 
+  /* CONTENEDOR DE PRODUCTOS SELECCIONADOS CON SCROLL */
+  .products-selected-container {
+    @apply min-h-80 lg:min-h-96 max-h-80 lg:max-h-96 overflow-y-auto p-4 md:p-6;
+  }
+
   /* BOTONES PRINCIPALES */
   .btn-add-products {
-    @apply inline-flex items-center px-4 py-3 md:px-6 border border-transparent text-sm md:text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105;
+    @apply inline-flex items-center px-4 py-3 md:px-6 border border-transparent text-sm md:text-base font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl;
   }
 
   .btn-modify-products {
@@ -564,7 +569,7 @@
     @apply bg-orange-500 text-white border-orange-500;
   }
 
-  /* Grid de productos del modal */
+  /* Grid de productos del modal SIN SCROLL */
   .products-grid-modal {
     @apply grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-4;
   }
@@ -719,7 +724,7 @@
     @apply hidden lg:block;
   }
 
-  /* ESTILOS DEL PAGINATOR - CORREGIDOS PARA USAR CLASES CORRECTAS */
+  /* ESTILOS DEL PAGINATOR - RESTAURADOS */
   
   .pagination-container {
     @apply flex flex-col space-y-4 bg-white px-4 py-6 border-t border-gray-200;
@@ -777,7 +782,192 @@
     @apply text-sm text-gray-600;
   }
 
+  /* PRODUCTOS SELECCIONADOS CON CANTIDADES */
+  .selected-product-item {
+    @apply flex items-center justify-between py-3 px-2 border-b border-orange-200 last:border-b-0 bg-white hover:bg-orange-50 transition-colors duration-200;
+  }
+
+  .selected-product-info {
+    @apply flex-1 min-w-0;
+  }
+
+  .selected-product-name {
+    @apply font-medium text-gray-900 text-sm line-clamp-1 mb-1;
+  }
+
+  .selected-product-price {
+    @apply text-orange-600 font-semibold text-sm;
+  }
+
+  /* CONTROLES DE CANTIDAD */
+  .quantity-controls {
+    @apply flex items-center space-x-2 ml-2;
+  }
+
+  .quantity-btn {
+    @apply w-8 h-8 rounded-full bg-gray-100 hover:bg-orange-100 text-gray-600 hover:text-orange-600 flex items-center justify-center transition-all duration-200 touch-manipulation;
+  }
+
+  .quantity-btn:active {
+    @apply transform scale-95;
+  }
+
+  .quantity-btn .material-icons {
+    @apply text-lg;
+  }
+
+  .quantity-input {
+    @apply w-12 h-8 text-center border border-gray-300 rounded-md text-sm font-medium focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none;
+  }
+
+  /* SECCIÓN DE ACCIONES DEL PEDIDO */
+  .order-actions-section {
+    @apply mt-4 pt-4 border-t-2 border-orange-200 space-y-4;
+  }
+
+  .order-notes-section {
+    @apply space-y-2;
+  }
+
+  .order-notes-label {
+    @apply flex items-center text-sm font-medium text-gray-700;
+  }
+
+  .order-notes-textarea {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md text-sm resize-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-colors duration-200;
+  }
+
+  .order-action-buttons {
+    @apply flex justify-center;
+  }
+
+  .btn-modify-products-compact {
+    @apply inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-orange-600 bg-orange-100 hover:bg-orange-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200;
+  }
+
+  /* RESPONSIVO PARA PRODUCTOS SELECCIONADOS */
+  @media (max-width: 640px) {
+    .selected-product-item {
+      @apply flex-col items-start space-y-2 py-3;
+    }
+
+    .selected-product-info {
+      @apply w-full;
+    }
+
+    .quantity-controls {
+      @apply ml-0 self-end;
+    }
+
+    .order-notes-textarea {
+      @apply text-xs;
+    }
+  }
+
+  /* ESTADOS DE VALIDACIÓN */
+  .order-invalid-message {
+    @apply mt-2 p-3 bg-red-50 border border-red-200 rounded-md;
+  }
+
+  .order-invalid-text {
+    @apply text-red-700 text-sm font-medium;
+  }
+
+  .order-valid-message {
+    @apply mt-2 p-3 bg-green-50 border border-green-200 rounded-md;
+  }
+
+  .order-valid-text {
+    @apply text-green-700 text-sm font-medium;
+  }
+
+  /* CONTENIDO DE PRODUCTOS SELECCIONADOS */
+  .selected-products-content {
+    @apply min-h-80 lg:min-h-96;
+  }
+
+  /* PRODUCTOS DEL RESUMEN (compactos con scroll) */
+  .summary-product-item {
+    @apply flex justify-between items-center py-2 px-2 text-sm border-b border-orange-100 last:border-b-0;
+  }
+
+  .summary-product-name {
+    @apply font-medium text-gray-900 text-xs leading-tight flex-1 min-w-0 pr-2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .summary-product-details {
+    @apply flex items-center space-x-2 flex-shrink-0;
+  }
+
+  .summary-quantity {
+    @apply bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium min-w-6 text-center;
+  }
+
+  .summary-total {
+    @apply text-orange-600 font-semibold text-xs;
+  }
+
+  /* SCROLL PARA EL RESUMEN */
+  #order-items {
+    @apply max-h-48 overflow-y-auto;
+  }
+
+  /* Personalizar scrollbar para el resumen */
+  #order-items::-webkit-scrollbar {
+    @apply w-2;
+  }
+
+  #order-items::-webkit-scrollbar-track {
+    @apply bg-orange-50 rounded-full;
+  }
+
+  #order-items::-webkit-scrollbar-thumb {
+    @apply bg-orange-300 rounded-full hover:bg-orange-400;
+  }
+
+  /* RESPONSIVE PARA RESUMEN */
+  @media (max-width: 640px) {
+    .summary-product-item {
+      @apply py-3;
+    }
+    
+    .summary-product-name {
+      @apply text-xs;
+    }
+    
+    #order-items {
+      @apply max-h-40;
+    }
+  }
+
 } /* Cierre de @layer components */
+
+/* SCROLLBAR PARA CONTENEDOR DE PRODUCTOS SELECCIONADOS (fuera de @layer por especificidad) */
+.products-selected-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.products-selected-container::-webkit-scrollbar-track {
+  @apply bg-orange-50 rounded-full;
+}
+
+.products-selected-container::-webkit-scrollbar-thumb {
+  @apply bg-orange-300 rounded-full;
+}
+
+.products-selected-container::-webkit-scrollbar-thumb:hover {
+  @apply bg-orange-400;
+}
+
+/* Firefox support para productos seleccionados */
+.products-selected-container {
+  scrollbar-width: thin;
+  scrollbar-color: #fdba74 #fef3e2; /* orange-300 orange-50 */
+}
 
 /* Animación del skeleton */
 @keyframes skeleton-shimmer {

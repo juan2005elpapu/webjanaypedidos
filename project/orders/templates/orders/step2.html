@@ -85,7 +85,7 @@
         <!-- Header -->
         <div class="modal-header">
             <div>
-                <h2 class="modal-title">🛒 Nuestros Productos</h2>
+                <h2 class="modal-title">Nuestros Productos</h2>
                 <p class="modal-subtitle">{{ products.count }} productos disponibles</p>
             </div>
             <button type="button" id="close-modal" class="modal-close-btn">
@@ -112,7 +112,7 @@
                 {% endfor %}
             </div>
             
-            <!-- Grid de productos -->
+            <!-- Grid de productos SIN SCROLL (solo grid normal) -->
             <div class="products-grid-modal" id="products-grid-modal">
                 {% for product in products %}
                     <div class="product-modal-card" 
@@ -188,8 +188,8 @@
                 {% endfor %}
             </div>
             
-            <!-- PAGINADOR DEL MODAL - USAR CLASES EXISTENTES -->
-            <div class="pagination-container" id="modal-pagination" style="display: none;">
+            <!-- PAGINADOR DEL MODAL -->
+            <div class="pagination-container" id="modal-pagination">
                 <div class="pagination-info">
                     <span id="pagination-info-text">Mostrando 1-12 de {{ products.count }} productos</span>
                 </div>
@@ -270,45 +270,182 @@ const settings = {
 let selectedProducts = new Set();
 let touchTimers = new Map();
 
+// VARIABLES DE PAGINACIÓN
+let currentPage = 1;
+let productsPerPage = 12;
+let filteredProducts = [];
+let allProductElements = [];
+
 console.log('📊 Datos cargados:');
 console.log('- Productos:', Object.keys(products).length);
-console.log('- Productos con imagen:', Object.values(products).filter(p => p.imageUrl).length);
 
-// SISTEMA DE CARGA DE IMÁGENES MEJORADO
+// SISTEMA DE PAGINACIÓN CORREGIDO
+window.PaginationSystem = {
+    init() {
+        console.log('📄 Inicializando sistema de paginación...');
+        allProductElements = Array.from(document.querySelectorAll('.product-modal-card'));
+        filteredProducts = [...allProductElements];
+        this.setupPagination();
+        this.showPage(1);
+    },
+
+    setupPagination() {
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => this.prevPage());
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.nextPage());
+        }
+    },
+
+    showPage(page) {
+        currentPage = page;
+        const startIndex = (page - 1) * productsPerPage;
+        const endIndex = startIndex + productsPerPage;
+
+        // Ocultar todos los productos
+        allProductElements.forEach(el => el.style.display = 'none');
+
+        // Mostrar solo los productos de la página actual
+        const currentPageProducts = filteredProducts.slice(startIndex, endIndex);
+        currentPageProducts.forEach(el => {
+            el.style.display = 'block';
+        });
+
+        // CARGAR IMÁGENES DE LA PÁGINA ACTUAL
+        this.loadCurrentPageImages(currentPageProducts);
+
+        this.updatePaginationUI();
+        this.updatePaginationInfo();
+    },
+
+    loadCurrentPageImages(visibleProducts) {
+        console.log('🖼️ Cargando imágenes de la página actual...');
+        visibleProducts.forEach(productCard => {
+            const productId = productCard.getAttribute('data-product-id');
+            const img = document.getElementById(`img-${productId}`);
+            if (img && productId) {
+                window.ImageLoader.loadImage(productId, img);
+            }
+        });
+    },
+
+    updatePaginationUI() {
+        const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        const numbersContainer = document.getElementById('pagination-numbers');
+
+        // Actualizar botones anterior/siguiente
+        if (prevBtn) {
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.className = currentPage === 1 
+                ? 'pagination-btn pagination-prev pagination-disabled'
+                : 'pagination-btn pagination-prev';
+        }
+
+        if (nextBtn) {
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.className = currentPage === totalPages 
+                ? 'pagination-btn pagination-next pagination-disabled'
+                : 'pagination-btn pagination-next';
+        }
+
+        // Generar números de página
+        if (numbersContainer) {
+            numbersContainer.innerHTML = this.generatePageNumbers(totalPages);
+        }
+    },
+
+    generatePageNumbers(totalPages) {
+        let html = '';
+        const maxVisible = 5;
+
+        if (totalPages <= maxVisible) {
+            // Mostrar todas las páginas
+            for (let i = 1; i <= totalPages; i++) {
+                html += this.createPageNumber(i);
+            }
+        } else {
+            // Lógica más compleja para muchas páginas
+            if (currentPage <= 3) {
+                for (let i = 1; i <= 4; i++) {
+                    html += this.createPageNumber(i);
+                }
+                html += '<span class="pagination-ellipsis">...</span>';
+                html += this.createPageNumber(totalPages);
+            } else if (currentPage >= totalPages - 2) {
+                html += this.createPageNumber(1);
+                html += '<span class="pagination-ellipsis">...</span>';
+                for (let i = totalPages - 3; i <= totalPages; i++) {
+                    html += this.createPageNumber(i);
+                }
+            } else {
+                html += this.createPageNumber(1);
+                html += '<span class="pagination-ellipsis">...</span>';
+                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
+                    html += this.createPageNumber(i);
+                }
+                html += '<span class="pagination-ellipsis">...</span>';
+                html += this.createPageNumber(totalPages);
+            }
+        }
+
+        return html;
+    },
+
+    createPageNumber(pageNum) {
+        const isActive = pageNum === currentPage;
+        const className = isActive ? 'pagination-number pagination-current' : 'pagination-number';
+        return `<button type="button" class="${className}" onclick="window.PaginationSystem.goToPage(${pageNum})">${pageNum}</button>`;
+    },
+
+    updatePaginationInfo() {
+        const totalItems = filteredProducts.length;
+        const startItem = totalItems === 0 ? 0 : (currentPage - 1) * productsPerPage + 1;
+        const endItem = Math.min(currentPage * productsPerPage, totalItems);
+        
+        const infoElement = document.getElementById('pagination-info-text');
+        if (infoElement) {
+            infoElement.textContent = `Mostrando ${startItem}-${endItem} de ${totalItems} productos`;
+        }
+    },
+
+    prevPage() {
+        if (currentPage > 1) {
+            this.showPage(currentPage - 1);
+        }
+    },
+
+    nextPage() {
+        const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+        if (currentPage < totalPages) {
+            this.showPage(currentPage + 1);
+        }
+    },
+
+    goToPage(page) {
+        this.showPage(page);
+    },
+
+    updateFilteredProducts(newFilteredProducts) {
+        filteredProducts = newFilteredProducts;
+        this.showPage(1); // Resetear a la primera página
+    }
+};
+
+// SISTEMA DE CARGA DE IMÁGENES CORREGIDO
 window.ImageLoader = {
     loadedImages: new Set(),
     errorImages: new Set(),
     
     init() {
         console.log('🔧 Inicializando ImageLoader...');
-        this.setupIntersectionObserver();
-    },
-    
-    setupIntersectionObserver() {
-        if ('IntersectionObserver' in window) {
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach((entry) => {  // ← SINTAXIS CORRECTA
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        const productId = img.id.replace('img-', '');
-                        this.loadImage(productId, img);
-                        observer.unobserve(img);
-                    }
-                });
-            }, {
-                rootMargin: '50px'
-            });
-            
-            // Observar todas las imágenes
-            document.querySelectorAll('img[id^="img-"]').forEach(img => {
-                observer.observe(img);
-            });
-            
-            console.log('👁️ IntersectionObserver configurado');
-        } else {
-            // Fallback para navegadores sin soporte
-            this.loadAllImagesDirectly();
-        }
+        // NO configurar IntersectionObserver para evitar conflictos con paginación
+        // Las imágenes se cargarán cuando la página las muestre
     },
     
     loadImage(productId, img) {
@@ -316,19 +453,21 @@ window.ImageLoader = {
             return;
         }
         
-        console.log(`🔄 [IMG-LOAD] Iniciando carga producto ${productId}`);
+        console.log(`🖼️ Cargando imagen para producto ${productId}`);
         
         const skeleton = document.getElementById(`skeleton-${productId}`);
         const imageUrl = img.getAttribute('data-src') || img.src;
         
-        // Crear nueva imagen para pre-cargar
+        if (!imageUrl) {
+            this.showErrorPlaceholder(productId);
+            return;
+        }
+        
         const newImg = new Image();
         
         newImg.onload = () => {
-            console.log(`✅ [IMG-SUCCESS] Producto ${productId} cargado`);
+            console.log(`✅ Imagen cargada para producto ${productId}`);
             this.loadedImages.add(productId);
-            
-            // Actualizar la imagen original
             img.src = imageUrl;
             img.style.display = 'block';
             img.style.opacity = '1';
@@ -339,21 +478,12 @@ window.ImageLoader = {
         };
         
         newImg.onerror = () => {
-            console.error(`❌ [IMG-ERROR] Producto ${productId} falló`);
+            console.log(`❌ Error al cargar imagen para producto ${productId}`);
             this.errorImages.add(productId);
             this.showErrorPlaceholder(productId);
         };
         
-        // Iniciar carga
         newImg.src = imageUrl;
-        
-        // Timeout de seguridad
-        setTimeout(() => {
-            if (!this.loadedImages.has(productId) && !this.errorImages.has(productId)) {
-                console.warn(`⏰ [IMG-TIMEOUT] Producto ${productId} timeout`);
-                this.showErrorPlaceholder(productId);
-            }
-        }, 5000);
     },
     
     showErrorPlaceholder(productId) {
@@ -374,50 +504,35 @@ window.ImageLoader = {
         }
     },
     
-    loadAllImagesDirectly() {
-        console.log('🔄 Cargando todas las imágenes directamente...');
-        document.querySelectorAll('img[id^="img-"]').forEach(img => {
-            const productId = img.id.replace('img-', '');
-            this.loadImage(productId, img);
+    // Método para cargar todas las imágenes visibles (usado por el paginador)
+    loadAllVisibleImages() {
+        document.querySelectorAll('.product-modal-card').forEach(card => {
+            if (card.style.display !== 'none') {
+                const productId = card.getAttribute('data-product-id');
+                const img = document.getElementById(`img-${productId}`);
+                if (img && productId) {
+                    this.loadImage(productId, img);
+                }
+            }
         });
-    },
-    
-    forceLoadVisibleImages() {
-        console.log('🔄 Forzando carga de imágenes visibles...');
-        const modal = document.getElementById('products-modal');
-        if (modal && modal.classList.contains('active')) {
-            document.querySelectorAll('img[id^="img-"]:not([style*="display: block"])').forEach(img => {
-                const productId = img.id.replace('img-', '');
-                this.loadImage(productId, img);
-            });
-        }
     }
 };
 
-// FUNCIONES SIMPLIFICADAS (mantener compatibilidad)
-window.imageLoaded = function(productId, imageUrl) {
-    // Función mantenida para compatibilidad pero no usada
-    console.log(`✅ [LEGACY] imageLoaded llamada para ${productId}`);
-};
-
-window.imageError = function(productId, imageUrl) {
-    // Función mantenida para compatibilidad pero no usada
-    console.log(`❌ [LEGACY] imageError llamada para ${productId}`);
-};
-
-// FUNCIONES DEL MODAL ACTUALIZADAS
+// FUNCIONES DEL MODAL
 window.openModal = function() {
     console.log('📂 Abriendo modal...');
     const modal = document.getElementById('products-modal');
     if (modal) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
-        console.log('✅ Modal abierto');
         
-        // Forzar carga de imágenes cuando se abre el modal
-        setTimeout(() => {
-            window.ImageLoader.forceLoadVisibleImages();
-        }, 100);
+        // Inicializar paginación si no se ha hecho
+        if (!window.PaginationSystem.initialized) {
+            window.PaginationSystem.init();
+            window.PaginationSystem.initialized = true;
+        }
+        
+        console.log('✅ Modal abierto');
     }
 };
 
@@ -438,10 +553,7 @@ window.viewProductDetails = function(productId) {
 };
 
 window.handleTouchStart = function(productId) {
-    console.log('👆 Touch start:', productId);
-    
     const timer = setTimeout(() => {
-        console.log('⏰ Long press detectado:', productId);
         window.viewProductDetails(productId);
         if (navigator.vibrate) {
             navigator.vibrate(50);
@@ -452,8 +564,6 @@ window.handleTouchStart = function(productId) {
 };
 
 window.handleTouchEnd = function(productId) {
-    console.log('👆 Touch end:', productId);
-    
     const timer = touchTimers.get(productId);
     if (timer) {
         clearTimeout(timer);
@@ -462,8 +572,6 @@ window.handleTouchEnd = function(productId) {
 };
 
 window.handleProductClick = function(productId) {
-    console.log('🖱️ Product click:', productId);
-    
     const timer = touchTimers.get(productId);
     if (timer) {
         clearTimeout(timer);
@@ -474,7 +582,6 @@ window.handleProductClick = function(productId) {
 };
 
 window.toggleProductSelection = function(productId) {
-    console.log('🔄 Toggle selección producto:', productId);
     const card = document.querySelector(`[data-product-id="${productId}"]`);
     const badge = document.getElementById(`badge-${productId}`);
     const stateNormal = document.getElementById(`state-normal-${productId}`);
@@ -486,14 +593,12 @@ window.toggleProductSelection = function(productId) {
         if (badge) badge.style.display = 'none';
         if (stateNormal) stateNormal.style.display = 'flex';
         if (stateSelected) stateSelected.style.display = 'none';
-        console.log('❌ Producto removido:', productId);
     } else {
         selectedProducts.add(productId);
         card?.classList.add('selected');
         if (badge) badge.style.display = 'flex';
         if (stateNormal) stateNormal.style.display = 'none';
         if (stateSelected) stateSelected.style.display = 'flex';
-        console.log('✅ Producto agregado:', productId);
     }
     
     window.updateSelectedCount();
@@ -505,11 +610,9 @@ window.updateSelectedCount = function() {
     if (element) {
         element.textContent = count;
     }
-    console.log('📊 Total productos seleccionados:', count);
 };
 
 window.clearSelection = function() {
-    console.log('🧹 Limpiando selección...');
     selectedProducts.clear();
     
     document.querySelectorAll('.product-modal-card').forEach(card => {
@@ -528,13 +631,9 @@ window.clearSelection = function() {
     });
     
     window.updateSelectedCount();
-    console.log('✅ Selección limpiada');
 };
 
 window.applySelection = function() {
-    console.log('✅ Aplicando selección...');
-    console.log('Productos seleccionados:', Array.from(selectedProducts));
-    
     if (selectedProducts.size === 0) {
         alert('Debes seleccionar al menos un producto');
         return;
@@ -542,430 +641,313 @@ window.applySelection = function() {
     
     window.updateMainProductsSection();
     window.closeModal();
-    
-    console.log('✅ Selección aplicada');
 };
 
 window.updateMainProductsSection = function() {
     const container = document.querySelector('.empty-products-container');
     const count = selectedProducts.size;
     
-    console.log('🔄 Actualizando sección principal. Productos:', count);
-    
     if (container && count > 0) {
         container.innerHTML = `
-            <div class="text-center">
-                <div class="mx-auto flex items-center justify-center w-20 h-20 md:w-24 md:h-24 bg-green-100 rounded-full mb-4 md:mb-6">
-                    <span class="material-icons text-green-600 text-3xl md:text-4xl">check_circle</span>
+            <div class="selected-products-content p-4 md:p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <span class="material-icons text-green-600 mr-2 align-middle">check_circle</span>
+                        Productos Seleccionados (${count})
+                    </h3>
+                    <p class="text-sm text-gray-600">Ajusta las cantidades según tus necesidades</p>
                 </div>
-                <h3 class="text-base md:text-lg font-medium text-gray-900 mb-2">${count} producto${count > 1 ? 's' : ''} agregado${count > 1 ? 's' : ''}</h3>
-                <p class="text-sm md:text-base text-gray-500 mb-4 md:mb-6">Ahora puedes ajustar las cantidades de cada producto</p>
-                <button type="button" 
-                        class="btn-modify-products"
-                        onclick="window.openModal();">
-                    <span class="material-icons mr-2">edit</span>
-                    Modificar Selección
-                </button>
+                
+                <!-- Productos con cantidades CON SCROLL -->
+                <div id="main-products-list" class="products-selected-container">
+                    <!-- Se llena dinámicamente -->
+                </div>
+                
+                <!-- Sección de notas -->
+                <div class="order-notes-section mb-6">
+                    <label for="order-notes" class="order-notes-label">
+                        <span class="material-icons text-orange-600 mr-2">note</span>
+                        Notas especiales
+                    </label>
+                    <textarea 
+                        id="order-notes" 
+                        name="order_notes" 
+                        class="order-notes-textarea"
+                        placeholder="Ej: Sin cebolla, extra salsa, etc."
+                        rows="3"></textarea>
+                </div>
+                
+                <!-- Botón modificar -->
+                <div class="text-center">
+                    <button type="button" 
+                            class="btn-modify-products-compact"
+                            onclick="window.openModal();">
+                        <span class="material-icons mr-2">edit</span>
+                        Modificar Selección
+                    </button>
+                </div>
             </div>
         `;
         
         window.showSelectedProductsWithQuantity();
-        console.log('✅ Sección principal actualizada');
     }
 };
 
 window.showSelectedProductsWithQuantity = function() {
-    console.log('📝 TODO: Implementar vista de productos con cantidades');
-};
-
-// SISTEMA DE PAGINACIÓN DEL MODAL - CORREGIDO
-window.ModalPagination = {
-    itemsPerPage: 12,
-    currentPage: 1,
-    totalItems: 0,
-    totalPages: 0,
-    allProducts: [],
-    filteredProducts: [],
+    const mainProductsList = document.getElementById('main-products-list');
+    const orderItems = document.getElementById('order-items');
     
-    init() {
-        console.log('📄 Inicializando paginación del modal...');
-        
-        this.allProducts = Array.from(document.querySelectorAll('.product-modal-card'));
-        this.filteredProducts = [...this.allProducts];
-        this.totalItems = this.allProducts.length;
-        this.calculatePages();
-        this.setupEventListeners();
-        this.showPaginationIfNeeded();
-        this.showPage(1);
-        
-        console.log(`📊 Paginación configurada: ${this.totalItems} productos, ${this.totalPages} páginas`);
-    },
+    if (!mainProductsList || !orderItems) return;
     
-    calculatePages() {
-        this.totalPages = Math.ceil(this.filteredProducts.length / this.itemsPerPage);
-    },
-    
-    setupEventListeners() {
-        const prevBtn = document.getElementById('prev-page');
-        const nextBtn = document.getElementById('next-page');
-        
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
-        }
-        
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
-        }
-    },
-    
-    showPaginationIfNeeded() {
-        const paginationContainer = document.getElementById('modal-pagination');
-        if (paginationContainer) {
-            // Ocultar paginación si no hay productos o solo hay una página
-            const shouldShow = this.filteredProducts.length > 0 && this.totalPages > 1;
-            paginationContainer.style.display = shouldShow ? 'flex' : 'none';
-            
-            console.log(`📄 Paginación ${shouldShow ? 'visible' : 'oculta'} - ${this.totalPages} páginas`);
-        }
-    },
-    
-    applyFilter(categoryFilter = '', searchQuery = '') {
-        console.log(`🔍 Aplicando filtros - Categoría: "${categoryFilter}", Búsqueda: "${searchQuery}"`);
-        
-        this.filteredProducts = this.allProducts.filter(card => {
-            const cardCategory = card.getAttribute('data-category');
-            const cardName = card.getAttribute('data-name');
-            
-            // Filtro de categoría
-            const categoryMatch = !categoryFilter || cardCategory === categoryFilter;
-            
-            // Filtro de búsqueda (buscar en nombre)
-            const searchMatch = !searchQuery || cardName.includes(searchQuery.toLowerCase());
-            
-            return categoryMatch && searchMatch;
-        });
-        
-        console.log(`📊 Productos filtrados: ${this.filteredProducts.length} de ${this.allProducts.length}`);
-        
-        // Recalcular paginación
-        this.calculatePages();
-        this.showPaginationIfNeeded();
-        
-        // Manejar mensaje de sin resultados ANTES de mostrar página
-        this.updateNoResultsMessage();
-        
-        // Solo ir a página 1 si hay resultados
-        if (this.filteredProducts.length > 0) {
-            this.goToPage(1);
-        } else {
-            // Si no hay resultados, asegurar que currentPage sea 1 pero no mostrar productos
-            this.currentPage = 1;
-            this.updatePaginationUI();
-            this.updateInfoText();
-        }
-    },
-    
-    // AGREGAR MÉTODO PARA MOSTRAR/OCULTAR MENSAJE SIN RESULTADOS
-    updateNoResultsMessage() {
-        const gridContainer = document.getElementById('products-grid-modal');
-        let noResultsMessage = document.getElementById('no-results-modal');
-        
-        if (this.filteredProducts.length === 0) {
-            // ASEGURAR que NO se muestren productos
-            this.allProducts.forEach(card => {
-                card.style.display = 'none';
-            });
-            
-            // Crear mensaje si no existe
-            if (!noResultsMessage && gridContainer) {
-                noResultsMessage = document.createElement('div');
-                noResultsMessage.id = 'no-results-modal';
-                noResultsMessage.className = 'col-span-full flex flex-col items-center justify-center py-12 text-center';
-                noResultsMessage.innerHTML = `
-                    <span class="material-icons text-gray-400 text-5xl mb-4">search_off</span>
-                    <p class="text-gray-600 text-lg font-medium mb-2">No se encontraron productos</p>
-                    <p class="text-gray-500 text-sm">Intenta con otros términos de búsqueda o categorías</p>
-                `;
-                gridContainer.appendChild(noResultsMessage);
-            }
-            
-            // Mostrar mensaje
-            if (noResultsMessage) {
-                noResultsMessage.style.display = 'flex';
-            }
-            
-            console.log('📭 Sin resultados - ocultando productos y mostrando mensaje');
-            
-        } else {
-            // Ocultar mensaje si existe
-            if (noResultsMessage) {
-                noResultsMessage.style.display = 'none';
-            }
-            
-            console.log(`📦 ${this.filteredProducts.length} productos encontrados`);
-        }
-    },
-    
-    // CORREGIR updatePaginationUI DENTRO DEL OBJETO
-    updatePaginationUI() {
-        const prevBtn = document.getElementById('prev-page');
-        const nextBtn = document.getElementById('next-page');
-        
-        // Actualizar botones anterior/siguiente
-        if (prevBtn) {
-            prevBtn.disabled = this.currentPage === 1;
-            prevBtn.className = `pagination-btn pagination-prev ${
-                this.currentPage === 1 ? 'pagination-disabled' : ''
-            }`;
-        }
-        
-        if (nextBtn) {
-            nextBtn.disabled = this.currentPage === this.totalPages;
-            nextBtn.className = `pagination-btn pagination-next ${
-                this.currentPage === this.totalPages ? 'pagination-disabled' : ''
-            }`;
-        }
-        
-        // Actualizar números de página
-        this.updatePageNumbers();
-    },
-    
-    showPage(page) {
-        console.log(`📄 Mostrando página ${page} de ${this.totalPages}`);
-        
-        // SIEMPRE ocultar todos los productos primero
-        this.allProducts.forEach(card => {
-            card.style.display = 'none';
-        });
-        
-        // SOLO mostrar productos si hay resultados filtrados
-        if (this.filteredProducts.length > 0 && page >= 1 && page <= this.totalPages) {
-            this.currentPage = page;
-            const start = (page - 1) * this.itemsPerPage;
-            const end = start + this.itemsPerPage;
-            
-            // Mostrar solo los productos de la página actual que coincidan con filtros
-            this.filteredProducts.slice(start, end).forEach(card => {
-                card.style.display = 'block';
-            });
-            
-            // Cargar imágenes de la página actual
-            if (window.ImageLoader) {
-                setTimeout(() => {
-                    window.ImageLoader.forceLoadVisibleImages();
-                }, 100);
-            }
-        }
-        
-        this.updatePaginationUI();
-        this.updateInfoText();
-    },
-    
-    goToPage(page) {
-        if (page < 1 || page > this.totalPages) return;
-        
-        console.log(`📄 Ir a página ${page} de ${this.totalPages}`);
-        
-        this.currentPage = page;
-        this.showPage(page);
-    },
-    
-    // AGREGAR updatePageNumbers DENTRO DEL OBJETO
-    updatePageNumbers() {
-        const numbersContainer = document.getElementById('pagination-numbers');
-        if (!numbersContainer) return;
-        
-        numbersContainer.innerHTML = '';
-        
-        const maxVisiblePages = 5;
-        let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
-        let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
-        
-        // Ajustar inicio si no hay suficientes páginas al final
-        if (endPage - startPage + 1 < maxVisiblePages) {
-            startPage = Math.max(1, endPage - maxVisiblePages + 1);
-        }
-        
-        // Página 1 si no está visible
-        if (startPage > 1) {
-            numbersContainer.appendChild(this.createPageButton(1));
-            if (startPage > 2) {
-                numbersContainer.appendChild(this.createEllipsis());
-            }
-        }
-        
-        // Páginas del rango visible
-        for (let i = startPage; i <= endPage; i++) {
-            numbersContainer.appendChild(this.createPageButton(i));
-        }
-        
-        // Última página si no está visible
-        if (endPage < this.totalPages) {
-            if (endPage < this.totalPages - 1) {
-                numbersContainer.appendChild(this.createEllipsis());
-            }
-            numbersContainer.appendChild(this.createPageButton(this.totalPages));
-        }
-    },
-    
-    // AGREGAR createPageButton DENTRO DEL OBJETO
-    createPageButton(pageNumber) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = pageNumber;
-        // USAR CLASES EXISTENTES
-        button.className = `pagination-btn pagination-number ${
-            pageNumber === this.currentPage ? 'pagination-current' : ''
-        }`;
-        button.addEventListener('click', () => this.goToPage(pageNumber));
-        return button;
-    },
-    
-    // AGREGAR createEllipsis DENTRO DEL OBJETO
-    createEllipsis() {
-        const span = document.createElement('span');
-        span.textContent = '...';
-        span.className = 'pagination-ellipsis'; // CLASE EXISTENTE
-        return span;
-    },
-    
-    // AGREGAR updateInfoText DENTRO DEL OBJETO
-    updateInfoText() {
-        const infoElement = document.getElementById('pagination-info-text');
-        if (!infoElement) return;
-        
-        const start = ((this.currentPage - 1) * this.itemsPerPage) + 1;
-        const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredProducts.length);
-        const total = this.filteredProducts.length;
-        
-        if (total === 0) {
-            infoElement.textContent = 'No hay productos';
-        } else if (total === 1) {
-            infoElement.textContent = 'Mostrando 1 producto';
-        } else {
-            infoElement.textContent = `Mostrando ${start}-${end} de ${total} productos`;
-        }
-    }
-};
-
-// ACTUALIZAR FILTROS PARA USAR PAGINACIÓN
-window.setupCategoryFilters = function() {
-    console.log('🏷️ Configurando filtros de categoría...');
-    
-    const filterButtons = document.querySelectorAll('.category-filter-modal');
-    
-    console.log(`📊 Filtros encontrados: ${filterButtons.length}`);
-    
-    filterButtons.forEach(button => {
-        button.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            const selectedCategory = this.getAttribute('data-category');
-            console.log(`🔄 Filtro seleccionado: "${selectedCategory || 'Todos'}"`);
-            
-            // Actualizar estado activo de los botones
-            filterButtons.forEach(btn => btn.classList.remove('active'));
-            this.classList.add('active');
-            
-            // Aplicar filtros unificados
-            window.applyFiltersAndSearch();
-        });
-    });
-    
-    console.log('✅ Filtros de categoría configurados');
-};
-
-// CONFIGURAR BUSCADOR - AGREGAR DESPUÉS DE setupCategoryFilters
-window.setupProductSearch = function() {
-    console.log('🔍 Configurando buscador de productos...');
-    
-    const searchInput = document.getElementById('product-search');
-    if (!searchInput) {
-        console.warn('⚠️ Input de búsqueda no encontrado');
+    if (selectedProducts.size === 0) {
+        mainProductsList.innerHTML = '';
+        orderItems.innerHTML = `
+            <div class="no-products-selected text-center py-4">
+                <span class="material-icons text-gray-400 text-3xl mb-2">shopping_cart</span>
+                <p class="text-sm text-gray-500">No hay productos</p>
+            </div>
+        `;
         return;
     }
     
-    let searchTimeout;
-    
-    searchInput.addEventListener('input', function(e) {
-        const query = e.target.value.trim();
-        console.log(`🔍 Búsqueda: "${query}"`);
-        
-        // Debouncing para mejor performance
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            window.applyFiltersAndSearch();
-        }, 300);
-    });
-    
-    // Buscar al presionar Enter
-    searchInput.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            clearTimeout(searchTimeout);
-            window.applyFiltersAndSearch();
+    // PRODUCTOS PRINCIPALES (con controles de cantidad)
+    let mainProductsHTML = '';
+    selectedProducts.forEach(productId => {
+        const product = products[productId];
+        if (product) {
+            mainProductsHTML += `
+                <div class="selected-product-item" data-product-id="${productId}">
+                    <div class="selected-product-info">
+                        <h4 class="selected-product-name">${product.name}</h4>
+                        <div class="selected-product-price">$${parseInt(product.price).toLocaleString()}</div>
+                    </div>
+                    <div class="quantity-controls">
+                        <button type="button" 
+                                class="quantity-btn quantity-minus" 
+                                onclick="window.updateQuantity(${productId}, -1)">
+                            <span class="material-icons">remove</span>
+                        </button>
+                        <input type="number" 
+                               class="quantity-input" 
+                               id="qty-${productId}"
+                               name="product_${productId}"
+                               value="1" 
+                               min="0" 
+                               max="99"
+                               onchange="window.onQuantityChange(${productId}, this.value)">
+                        <button type="button" 
+                                class="quantity-btn quantity-plus" 
+                                onclick="window.updateQuantity(${productId}, 1)">
+                            <span class="material-icons">add</span>
+                        </button>
+                    </div>
+                </div>
+            `;
         }
     });
     
-    console.log('✅ Buscador configurado');
-};
-
-// FUNCIÓN UNIFICADA DE FILTROS Y BÚSQUEDA
-window.applyFiltersAndSearch = function() {
-    const searchQuery = document.getElementById('product-search')?.value || '';
-    const activeCategory = document.querySelector('.category-filter-modal.active')?.getAttribute('data-category') || '';
-    
-    console.log(`🔍 Aplicando filtros - Categoría: "${activeCategory}", Búsqueda: "${searchQuery}"`);
-    
-    // Usar el sistema de paginación del modal
-    window.ModalPagination.applyFilter(activeCategory, searchQuery);
-};
-
-// ACTUALIZAR EVENT LISTENERS
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Configurando event listeners...');
-    
-    // Inicializar sistema de imágenes
-    window.ImageLoader.init();
-    
-    // Inicializar paginación
-    window.ModalPagination.init();
-    
-    const allImages = document.querySelectorAll('img[id^="img-"]');
-    console.log(`🖼️ Total de imágenes en el DOM: ${allImages.length}`);
-    
-    allImages.forEach((img, index) => {
-        const productId = img.id.replace('img-', '');
-        const imageUrl = img.src || img.getAttribute('data-src');
-        console.log(`   ${index + 1}. Producto ${productId} - URL: ${imageUrl}`);
+    // PRODUCTOS DEL RESUMEN
+    let summaryHTML = '';
+    selectedProducts.forEach(productId => {
+        const product = products[productId];
+        if (product) {
+            summaryHTML += `
+                <div class="summary-product-item" data-product-id="${productId}">
+                    <div class="summary-product-name">${product.name}</div>
+                    <div class="summary-product-details">
+                        <span class="summary-quantity" id="summary-qty-${productId}">1</span>
+                        <span class="summary-total" id="summary-total-${productId}">$${parseInt(product.price).toLocaleString()}</span>
+                    </div>
+                </div>
+            `;
+        }
     });
     
-    const addBtn = document.getElementById('add-products-btn');
-    if (addBtn) {
-        addBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.openModal();
-        });
-        console.log('✅ Botón principal configurado');
+    mainProductsList.innerHTML = mainProductsHTML;
+    orderItems.innerHTML = summaryHTML;
+    
+    window.calculateTotal();
+};
+
+window.updateQuantity = function(productId, change) {
+    const input = document.getElementById(`qty-${productId}`);
+    if (!input) return;
+    
+    let newValue = parseInt(input.value) + change;
+    newValue = Math.max(0, Math.min(99, newValue));
+    
+    input.value = newValue;
+    window.onQuantityChange(productId, newValue);
+};
+
+window.onQuantityChange = function(productId, quantity) {
+    const qty = parseInt(quantity);
+    
+    if (qty <= 0) {
+        selectedProducts.delete(productId);
+        const mainItem = document.querySelector(`#main-products-list [data-product-id="${productId}"]`);
+        const summaryItem = document.querySelector(`#order-items [data-product-id="${productId}"]`);
+        
+        if (mainItem) mainItem.remove();
+        if (summaryItem) summaryItem.remove();
+        
+        if (selectedProducts.size === 0) {
+            window.updateMainProductsSection();
+            return;
+        }
+    } else {
+        const summaryQty = document.getElementById(`summary-qty-${productId}`);
+        const summaryTotal = document.getElementById(`summary-total-${productId}`);
+        const product = products[productId];
+        
+        if (summaryQty && summaryTotal && product) {
+            summaryQty.textContent = qty;
+            summaryTotal.textContent = `$${(product.price * qty).toLocaleString()}`;
+        }
     }
     
-    const closeBtn = document.getElementById('close-modal');
-    const applyBtn = document.getElementById('apply-selection');
-    const clearBtn = document.getElementById('clear-selection');
-    
-    if (closeBtn) closeBtn.addEventListener('click', window.closeModal);
-    if (applyBtn) applyBtn.addEventListener('click', window.applySelection);
-    if (clearBtn) clearBtn.addEventListener('click', window.clearSelection);
-    
-    // Configurar filtros de categoría
-    window.setupCategoryFilters();
-    
-    // AGREGAR: Configurar buscador
-    window.setupProductSearch();
-    
-    console.log('🎯 Inicialización completa');
-});
+    window.calculateTotal();
+};
 
-console.log('📝 Script cargado completamente');
+window.calculateTotal = function() {
+    let subtotal = 0;
+    
+    selectedProducts.forEach(productId => {
+        const product = products[productId];
+        const qtyInput = document.getElementById(`qty-${productId}`);
+        
+        if (product && qtyInput) {
+            const quantity = parseInt(qtyInput.value) || 0;
+            subtotal += product.price * quantity;
+        }
+    });
+    
+    const shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+    const total = subtotal + shipping;
+    
+    const subtotalElement = document.getElementById('subtotal-amount');
+    const shippingElement = document.getElementById('shipping-amount');
+    const finalElement = document.getElementById('final-amount');
+    const totalElement = document.getElementById('total-amount');
+    const deliveryInfo = document.getElementById('delivery-info');
+    
+    if (subtotalElement) subtotalElement.textContent = `$${subtotal.toLocaleString()}`;
+    if (shippingElement) shippingElement.textContent = shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
+    if (finalElement) finalElement.textContent = `$${total.toLocaleString()}`;
+    if (totalElement) totalElement.textContent = `$${total.toLocaleString()}`;
+    
+    if (deliveryInfo) {
+        deliveryInfo.style.display = subtotal > 0 ? 'block' : 'none';
+    }
+};
+
+// FUNCIONES DE BÚSQUEDA Y FILTROS
+window.setupSearch = function() {
+    const searchInput = document.getElementById('product-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', window.filterProducts);
+    }
+};
+
+window.setupCategoryFilters = function() {
+    const filters = document.querySelectorAll('.category-filter-modal');
+    filters.forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            filters.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            
+            window.filterProducts();
+        });
+    });
+};
+
+window.filterProducts = function() {
+    const searchTerm = document.getElementById('product-search')?.value.toLowerCase() || '';
+    const activeCategory = document.querySelector('.category-filter-modal.active')?.getAttribute('data-category') || '';
+    
+    const filtered = allProductElements.filter(card => {
+        const productName = card.getAttribute('data-name') || '';
+        const productCategory = card.getAttribute('data-category') || '';
+        
+        const matchesSearch = productName.includes(searchTerm);
+        const matchesCategory = !activeCategory || productCategory === activeCategory;
+        
+        return matchesSearch && matchesCategory;
+    });
+    
+    // Actualizar sistema de paginación
+    window.PaginationSystem.updateFilteredProducts(filtered);
+    
+    // Mostrar mensaje si no hay resultados
+    window.updateEmptyMessage(filtered.length);
+};
+
+window.updateEmptyMessage = function(visibleCount) {
+    let emptyMessage = document.querySelector('.empty-products-message');
+    const container = document.getElementById('products-grid-modal');
+    
+    if (visibleCount === 0) {
+        if (!emptyMessage) {
+            emptyMessage = document.createElement('div');
+            emptyMessage.className = 'empty-products-message';
+            emptyMessage.innerHTML = `
+                <span class="material-icons text-gray-400 text-4xl mb-2">search_off</span>
+                <p class="text-gray-600">No se encontraron productos</p>
+            `;
+            container.appendChild(emptyMessage);
+        }
+        emptyMessage.style.display = 'flex';
+    } else if (emptyMessage) {
+        emptyMessage.style.display = 'none';
+    }
+};
+
+// EVENT LISTENERS
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Configurando event listeners...');
+    
+    const addProductsBtn = document.getElementById('add-products-btn');
+    if (addProductsBtn) {
+        addProductsBtn.addEventListener('click', window.openModal);
+    }
+    
+    const closeModalBtn = document.getElementById('close-modal');
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', window.closeModal);
+    }
+    
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            window.closeModal();
+        }
+    });
+    
+    const modal = document.getElementById('products-modal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                window.closeModal();
+            }
+        });
+    }
+    
+    const clearBtn = document.getElementById('clear-selection');
+    if (clearBtn) {
+        clearBtn.addEventListener('click', window.clearSelection);
+    }
+    
+    const applyBtn = document.getElementById('apply-selection');
+    if (applyBtn) {
+        applyBtn.addEventListener('click', window.applySelection);
+    }
+    
+    window.setupSearch();
+    window.setupCategoryFilters();
+    window.ImageLoader.init();
+    
+    console.log('✅ Todos los event listeners configurados');
+});
 </script>
 {% endblock %}
