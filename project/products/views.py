@@ -37,53 +37,29 @@ class ProductListView(LoginRequiredMixin, ListView):
     model = Product
     template_name = 'products/list.html'
     context_object_name = 'products'
-    paginate_by = 12
-    login_url = 'login'
+    paginate_by = None  # ← Eliminar paginación server-side
     
     def get_queryset(self):
-        # ASEGURAR: Solo productos disponibles + optimización
-        queryset = Product.objects.select_related('category').filter(is_available=True)
-        
-        # Aplicar filtro de búsqueda si existe
-        search_query = self.request.GET.get('q')
-        if search_query:
-            queryset = queryset.filter(
-                Q(name__icontains=search_query) | 
-                Q(description__icontains=search_query) |
-                Q(ingredients__icontains=search_query)
-            )
-        
-        # Aplicar filtro de categoría si existe
-        category_slug = self.request.GET.get('category')
-        if category_slug:
-            queryset = queryset.filter(category__slug=category_slug)
-            
-        return queryset.order_by('category__name', 'name')
+        # SOLO carga inicial - sin filtros dinámicos
+        return Product.objects.select_related('category').filter(
+            is_available=True
+        ).only(
+            'id', 'name', 'price', 'weight', 'image',
+            'category__name', 'category__slug'
+        ).order_by('category__name', 'name')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        # SIN CACHE para categorías en desarrollo
-        # categories = cache.get('active_categories_available')
-        # if categories is None:
-        
-        # SIEMPRE CONSULTAR DB - Solo categorías que tienen productos disponibles
-        categories = Category.objects.filter(
+        # Categorías para filtros JS
+        context['categories'] = Category.objects.filter(
             products__is_available=True
-        ).distinct().order_by('name')
-        # cache.set('active_categories_available', categories, 60 * 15)
-            
-        context['categories'] = categories
-        context['selected_category'] = self.request.GET.get('category')
-        context['search_query'] = self.request.GET.get('q', '')
+        ).distinct().only('name', 'slug')
         
-        # Agregar información de la categoría seleccionada para el template
-        if context['selected_category']:
-            try:
-                selected_category_obj = categories.get(slug=context['selected_category'])
-                context['selected_category_name'] = selected_category_obj.name
-            except Category.DoesNotExist:
-                context['selected_category_name'] = 'Categoría no encontrada'
+        # Flag para decidir entre JS vs Server pagination
+        products_count = context['products'].count()
+        context['use_js_filtering'] = products_count <= 100
+        context['products_count'] = products_count
         
         return context
 

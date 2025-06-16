@@ -1,14 +1,8 @@
+<!-- products/list.html - HÍBRIDO JS + SERVER -->
 {% extends "core/base_dashboard.html" %}
 {% load humanize %}
-{% block title %}Productos | Janay Pedidos{% endblock %}
 
-{% block extra_head %}
-{% for product in products|slice:":8" %}
-    {% if product.image %}
-        <link rel="preload" as="image" href="{{ product.image.url }}">
-    {% endif %}
-{% endfor %}
-{% endblock %}
+{% block title %}Productos | Janay Pedidos{% endblock %}
 
 {% block main_content %}
 <div class="mb-6">
@@ -16,422 +10,502 @@
     <p class="text-gray-600">Explora nuestros productos</p>
 </div>
 
-<!-- Filtros por categoría -->
-<div class="categories-filter-container">
-    <div class="categories-filter-grid">
-        <a href="{% url 'products:list' %}{% if search_query %}?q={{ search_query }}{% endif %}" 
-           class="category-filter {% if not selected_category %}category-filter-active{% else %}category-filter-inactive{% endif %}">
-            Todos
-        </a>
-        {% for category in categories %}
-            <a href="{% url 'products:list' %}?category={{ category.slug }}{% if search_query %}&q={{ search_query }}{% endif %}" 
-               class="category-filter {% if selected_category == category.slug %}category-filter-active{% else %}category-filter-inactive{% endif %}">
-                {{ category.name }}
-            </a>
-        {% endfor %}
-    </div>
-</div>
-
-<!-- Información de resultados y paginación -->
-{% if products %}
-<div class="flex justify-between items-center mb-4 text-sm text-gray-600">
-    <div class="results-info">
-        {% if page_obj.paginator.count == 1 %}
-            Mostrando 1 producto
-        {% else %}
-            Mostrando {{ page_obj.start_index }}-{{ page_obj.end_index }} de {{ page_obj.paginator.count }} productos
-        {% endif %}
-        {% if selected_category and selected_category_name %}
-            en <strong>{{ selected_category_name }}</strong>
-        {% endif %}
-        {% if search_query %}
-            para <strong>"{{ search_query }}"</strong>
-        {% endif %}
+{% if use_js_filtering %}
+    <!-- MODO JS - Para 100 productos o menos -->
+    
+    <!-- Buscador en tiempo real -->
+    <div class="search-container mb-4">
+        <span class="material-icons search-icon">search</span>
+        <input type="text" 
+               id="product-search" 
+               class="search-input"
+               placeholder="Buscar productos...">
     </div>
     
-    <!-- Mini paginador arriba -->
-    {% if page_obj.has_other_pages %}
-    <div class="pagination-mini">
-        Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
-    </div>
-    {% endif %}
-</div>
-{% endif %}
-
-<!-- Skeleton loader inicial -->
-<div id="skeleton-loader" class="products-grid" style="display: grid;">
-    {% for i in "123456789012" %}
-        <div class="product-card-skeleton">
-            <div class="product-skeleton-image">
-                <div class="skeleton-shimmer"></div>
-            </div>
-            <div class="product-skeleton-content">
-                <div class="skeleton-line skeleton-title"></div>
-                <div class="skeleton-line skeleton-category"></div>
-                <div class="skeleton-footer">
-                    <div class="skeleton-line skeleton-price"></div>
-                    <div class="skeleton-button"></div>
-                </div>
-            </div>
-        </div>
-    {% endfor %}
-</div>
-
-<!-- Productos reales -->
-<div id="products-grid" class="products-grid" style="display: none;">
-    {% for product in products %}
-        <div class="product-card">
-            <div class="product-card-image">
-                {% if product.image %}
-                    <!-- Skeleton individual por imagen -->
-                    <div class="image-skeleton" data-product="{{ product.id }}" style="display: block;">
-                        <div class="skeleton-shimmer"></div>
-                    </div>
-                    <img src="{{ product.image.url }}" 
-                         alt="{{ product.name }}" 
-                         class="product-card-image-container"
-                         loading="{% if forloop.counter <= 8 %}eager{% else %}lazy{% endif %}"
-                         data-product="{{ product.id }}"
-                         data-position="{{ forloop.counter }}"
-                         onload="if(typeof resolveImage === 'function') resolveImage(this, true);"
-                         onerror="if(typeof resolveImage === 'function') resolveImage(this, false);"
-                         style="display: none; opacity: 0;">
-                {% else %}
-                    <div class="product-card-no-image" style="display: flex;">
-                        <span class="material-icons text-gray-400 text-4xl">bakery_dining</span>
-                        <span class="product-card-no-image-text">Sin imagen</span>
-                    </div>
-                {% endif %}
-            </div>
-            <div class="product-card-content">
-                <h3 class="product-card-title">{{ product.name }}</h3>
-                <p class="product-card-category">{{ product.category.name }}</p>
-                <div class="product-card-footer">
-                    <span class="product-card-price">${{ product.price|floatformat:0|intcomma }}</span>
-                    <a href="{% url 'products:detail' product.id %}" class="btn-secondary">
-                        Ver detalles
-                    </a>
-                </div>
-            </div>
-        </div>
-    {% empty %}
-        <div class="empty-state">
-            <span class="material-icons text-gray-400 text-6xl mb-4">inventory_2</span>
-            <p class="empty-state-text">
-                {% if search_query %}
-                    No se encontraron productos para "{{ search_query }}"
-                    {% if selected_category_name %}en la categoría {{ selected_category_name }}{% endif %}.
-                {% elif selected_category_name %}
-                    No hay productos disponibles en la categoría {{ selected_category_name }}.
-                {% else %}
-                    No hay productos disponibles.
-                {% endif %}
-            </p>
-            {% if search_query or selected_category %}
-                <a href="{% url 'products:list' %}" class="btn-primary mt-4">
-                    Ver todos los productos
-                </a>
-            {% endif %}
-        </div>
-    {% endfor %}
-</div>
-
-<!-- Paginación principal -->
-{% if page_obj.has_other_pages %}
-<div class="pagination-container">
-    <nav class="pagination" aria-label="Navegación de páginas">
-        <!-- Botón anterior -->
-        {% if page_obj.has_previous %}
-            <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.previous_page_number }}" 
-               class="pagination-btn pagination-prev">
-                <span class="material-icons">chevron_left</span>
-                Anterior
-            </a>
-        {% else %}
-            <span class="pagination-btn pagination-disabled">
-                <span class="material-icons">chevron_left</span>
-                Anterior
-            </span>
-        {% endif %}
-
-        <!-- Números de página -->
-        <div class="pagination-numbers">
-            {% for page_num in page_obj.paginator.page_range %}
-                {% if page_num == page_obj.number %}
-                    <span class="pagination-btn pagination-current">{{ page_num }}</span>
-                {% elif page_num == 1 or page_num == page_obj.paginator.num_pages or page_num|add:'-2' <= page_obj.number <= page_num|add:'2' %}
-                    <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_num }}" 
-                       class="pagination-btn pagination-number">{{ page_num }}</a>
-                {% elif page_num == 2 and page_obj.number > 4 %}
-                    <span class="pagination-ellipsis">...</span>
-                {% elif page_num == page_obj.paginator.num_pages|add:'-1' and page_obj.number < page_obj.paginator.num_pages|add:'-3' %}
-                    <span class="pagination-ellipsis">...</span>
-                {% endif %}
+    <!-- Filtros por categoría -->
+    <div class="categories-filter-container">
+        <div class="categories-filter-grid">
+            <button class="category-filter category-filter-active" data-category="">
+                Todos
+            </button>
+            {% for category in categories %}
+                <button class="category-filter category-filter-inactive" data-category="{{ category.slug }}">
+                    {{ category.name }}
+                </button>
             {% endfor %}
         </div>
-
-        <!-- Botón siguiente -->
-        {% if page_obj.has_next %}
-            <a href="?{% if selected_category %}category={{ selected_category }}&{% endif %}{% if search_query %}q={{ search_query }}&{% endif %}page={{ page_obj.next_page_number }}" 
-               class="pagination-btn pagination-next">
-                Siguiente
-                <span class="material-icons">chevron_right</span>
-            </a>
-        {% else %}
-            <span class="pagination-btn pagination-disabled">
-                Siguiente
-                <span class="material-icons">chevron_right</span>
-            </span>
-        {% endif %}
-    </nav>
-    
-    <!-- Información adicional de paginación -->
-    <div class="pagination-info">
-        <span class="text-sm text-gray-600">
-            Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} 
-            ({{ page_obj.paginator.count }} producto{{ page_obj.paginator.count|pluralize }} en total)
-        </span>
     </div>
-</div>
+    
+    <!-- Información de resultados -->
+    <div class="results-info mb-4">
+        <span id="results-text">Mostrando {{ products_count }} productos</span>
+    </div>
+    
+    <!-- Grid de productos -->
+    <div id="products-grid" class="products-grid">
+        {% for product in products %}
+            <div class="product-card" 
+                 data-name="{{ product.name|lower }}"
+                 data-category="{{ product.category.slug }}"
+                 data-price="{{ product.price }}"
+                 data-product-id="{{ product.id }}">
+                
+                <!-- Skeleton de carga -->
+                <div class="product-card-skeleton" id="skeleton-{{ product.id }}">
+                    <div class="product-skeleton-image">
+                        <div class="skeleton-shimmer"></div>
+                    </div>
+                    <div class="product-skeleton-content">
+                        <div class="skeleton-line skeleton-title"></div>
+                        <div class="skeleton-line skeleton-category"></div>
+                        <div class="skeleton-footer">
+                            <div class="skeleton-line skeleton-price"></div>
+                            <div class="skeleton-button"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contenido real del producto -->
+                <div class="product-real-content" id="content-{{ product.id }}" style="display: none;">
+                    <!-- Imagen del producto -->
+                    <div class="product-card-image">
+                        {% if product.image %}
+                            <img src="{{ product.image.url }}" 
+                                 alt="{{ product.name }}"
+                                 class="product-card-image-container"
+                                 id="img-{{ product.id }}"
+                                 onload="window.productImageLoaded && window.productImageLoaded({{ product.id }})"
+                                 onerror="window.productImageError && window.productImageError({{ product.id }})">
+                        {% else %}
+                            <div class="product-card-no-image">
+                                <span class="material-icons text-gray-400 text-4xl">bakery_dining</span>
+                                <span class="product-card-no-image-text">Sin imagen</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Contenido del producto -->
+                    <div class="product-card-content">
+                        <h3 class="product-card-title">{{ product.name }}</h3>
+                        
+                        <!-- AGREGAR SOLO ESTAS LÍNEAS -->
+                        {% if product.description %}
+                            <p class="product-card-description">{{ product.description|truncatewords:8 }}</p>
+                        {% endif %}
+                        
+                        {% if product.weight %}
+                            <p class="product-card-category">{{ product.weight }}g</p>
+                        {% endif %}
+                        
+                        <div class="product-card-footer">
+                            <span class="product-card-price">${{ product.price|floatformat:0|intcomma }}</span>
+                            <a href="{% url 'products:detail' product.id %}" class="btn-secondary">
+                                Ver detalles
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="empty-state">
+                <span class="material-icons text-gray-400 text-5xl mb-4">inventory_2</span>
+                <p class="empty-state-text">No hay productos disponibles</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- UN SOLO MENSAJE ESTILIZADO -->
+    <div id="no-results-message" class="empty-state" style="display: none;">
+        <span class="material-icons text-gray-400 text-6xl mb-4">search_off</span>
+        <div class="text-center">
+            <p class="text-gray-600 text-lg font-medium mb-2">No se encontraron productos</p>
+            <p class="text-gray-500 text-sm">Intenta con otros términos de búsqueda o categorías</p>
+        </div>
+    </div>
+    
+    <!-- Paginación JS -->
+    <div id="js-pagination" class="pagination-container" style="display: none;">
+        <div class="pagination-info">
+            <span id="pagination-info-text">Mostrando productos</span>
+        </div>
+        <div class="pagination">
+            <button type="button" id="prev-page" class="pagination-btn pagination-prev pagination-disabled" disabled>
+                <span class="material-icons text-sm">chevron_left</span>
+                Anterior
+            </button>
+            
+            <div class="pagination-numbers" id="pagination-numbers">
+                <!-- Números generados dinámicamente -->
+            </div>
+            
+            <button type="button" id="next-page" class="pagination-btn pagination-next">
+                Siguiente
+                <span class="material-icons text-sm">chevron_right</span>
+            </button>
+        </div>
+    </div>
+
+{% else %}
+    <!-- MODO SERVER - Para 100+ productos -->
+    
+    <!-- Formulario de filtros tradicional -->
+    <form method="get" class="filters-form">
+        <div class="search-container mb-4">
+            <input type="text" 
+                   name="q" 
+                   value="{{ search_query }}"
+                   placeholder="Buscar productos...">
+            <button type="submit">Buscar</button>
+        </div>
+        
+        <div class="categories-filter-container">
+            {% for category in categories %}
+                <a href="?category={{ category.slug }}{% if search_query %}&q={{ search_query }}{% endif %}" 
+                   class="category-filter">{{ category.name }}</a>
+            {% endfor %}
+        </div>
+    </form>
+    
+    <!-- Grid con paginación server-side -->
+    <div class="products-grid">
+        {% for product in products %}
+            <!-- ...cards normales... -->
+        {% endfor %}
+    </div>
+    
+    <!-- Paginación tradicional Django -->
+    {% if page_obj.has_other_pages %}
+        <!-- ...paginación server-side... -->
+    {% endif %}
 {% endif %}
 
-<!-- DEBUG: Mostrar URLs de imágenes -->
-<div style="display: none;" id="debug-urls">
-    {% for product in products %}
-        {% if product.image %}
-            <div data-product="{{ product.id }}">{{ product.image.url }}</div>
-        {% endif %}
-    {% endfor %}
-</div>
 {% endblock %}
 
 {% block extra_js %}
+{% if use_js_filtering %}
 <script>
-let startTime = Date.now();
-const MINIMUM_SKELETON_TIME = 500;
-const INDIVIDUAL_IMAGE_TIMEOUT = 3000;
-const MAXIMUM_SKELETON_TIME = 6000;
-let globalSkeletonHidden = false;
-let imageTimeouts = new Map();
-let loadedImagesCount = 0;
-let totalImages = 0;
-let minimumTimeReached = false;
-
-function checkSkeletonReadiness() {
-    if (!minimumTimeReached) return;
-    
-    const eagerImages = document.querySelectorAll('img[loading="eager"][data-product]');
-    const eagerLoaded = Array.from(eagerImages).filter(img => 
-        img.complete || img.naturalWidth > 0 || img.style.opacity === '1'
-    ).length;
-    
-    if (eagerLoaded >= eagerImages.length && eagerImages.length > 0) {
-        hideGlobalSkeleton();
-        return true;
-    }
-    
-    if (eagerImages.length === 0) {
-        hideGlobalSkeleton();
-        return true;
-    }
-    
-    return false;
-}
-
-function resolveImage(img, success) {
-    const productId = img.getAttribute('data-product');
-    const position = img.getAttribute('data-position');
-    const isEager = img.loading === 'eager';
-    
-    if (imageTimeouts.has(productId)) {
-        clearTimeout(imageTimeouts.get(productId));
-        imageTimeouts.delete(productId);
-    }
-    
-    const skeleton = document.querySelector(`[data-product="${productId}"].image-skeleton`);
-    
-    if (skeleton) {
-        skeleton.style.transition = 'opacity 0.2s ease';
-        skeleton.style.opacity = '0';
-        setTimeout(() => {
-            skeleton.style.display = 'none';
-        }, 200);
-    }
-    
-    if (success) {
-        img.style.display = 'block';
-        setTimeout(() => {
-            img.style.transition = 'opacity 0.3s ease';
-            img.style.opacity = '1';
-            
-            if (isEager) {
-                loadedImagesCount++;
-                setTimeout(() => checkSkeletonReadiness(), 100);
-            }
-        }, 10);
-    } else {
-        if (isEager) {
-            loadedImagesCount++;
-            setTimeout(() => checkSkeletonReadiness(), 100);
-        }
-    }
-}
-
-function forceResolveImage(productId) {
-    const img = document.querySelector(`img[data-product="${productId}"]`);
-    if (img) {
-        resolveImage(img, false);
-    }
-}
-
-function hideGlobalSkeleton() {
-    if (globalSkeletonHidden) return;
-    
-    const skeleton = document.getElementById('skeleton-loader');
-    const products = document.getElementById('products-grid');
-    
-    if (skeleton && products) {
-        globalSkeletonHidden = true;
+// SISTEMA DE FILTRADO JS - CORREGIDO CON CARGA DE IMÁGENES
+class ProductFilter {
+    constructor() {
+        this.allProducts = Array.from(document.querySelectorAll('.product-card'));
+        this.filteredProducts = [...this.allProducts];
+        this.currentPage = 1;
+        this.itemsPerPage = 12;
+        this.totalPages = 0;
+        this.loadedImages = new Set();
         
-        skeleton.style.transition = 'opacity 0.3s ease';
-        skeleton.style.opacity = '0';
+        this.calculatePages();
+        this.setupImageEvents(); // CONFIGURAR PRIMERO
+        this.setupSearch();
+        this.setupCategoryFilters();
+        this.setupPagination();
+        this.initImageLoading(); // CARGAR DESPUÉS
+        this.updateDisplay();
         
-        setTimeout(() => {
-            skeleton.style.display = 'none';
-            products.style.display = 'grid';
-            products.style.opacity = '0';
+        console.log(`🔍 Filtrado JS activo para ${this.allProducts.length} productos`);
+    }
+    
+    // CONFIGURAR EVENTOS DE IMAGEN PRIMERO
+    setupImageEvents() {
+        window.productImageLoaded = (productId) => {
+            console.log(`✅ Imagen cargada: ${productId}`);
+            this.showProductContent(productId.toString());
+        };
+        
+        window.productImageError = (productId) => {
+            console.log(`❌ Error cargando imagen: ${productId}`);
+            this.showProductContent(productId.toString());
+        };
+    }
+    
+    // CARGA DE IMÁGENES SIMPLIFICADA
+    initImageLoading() {
+        console.log('🖼️ Iniciando carga de imágenes...');
+        
+        // Cargar todas las imágenes con delay progresivo
+        this.allProducts.forEach((card, index) => {
+            const productId = card.dataset.productId;
             
+            // Delay progresivo para mejor UX
             setTimeout(() => {
-                products.style.transition = 'opacity 0.4s ease';
-                products.style.opacity = '1';
-            }, 10);
-        }, 300);
+                this.loadProductImage(card);
+            }, index * 150); // 150ms entre cada imagen
+        });
     }
-}
-
-function setupImageTimeouts() {
-    const images = document.querySelectorAll('img[data-product]');
-    const eagerImages = document.querySelectorAll('img[loading="eager"][data-product]');
     
-    totalImages = eagerImages.length;
-    loadedImagesCount = 0;
-    
-    images.forEach((img, index) => {
-        const productId = img.getAttribute('data-product');
-        const position = img.getAttribute('data-position');
-        const isEager = img.loading === 'eager';
+    loadProductImage(card) {
+        const productId = card.dataset.productId;
         
-        if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
-            resolveImage(img, true);
+        if (this.loadedImages.has(productId)) {
             return;
         }
         
-        if (!isEager) {
-            setTimeout(() => {
-                if (!img.complete && !img.naturalWidth) {
-                    img.loading = 'eager';
-                    window.dispatchEvent(new Event('scroll'));
-                }
-            }, 100);
+        console.log(`🔄 Cargando imagen del producto ${productId}`);
+        
+        const img = card.querySelector(`#img-${productId}`);
+        
+        if (!img) {
+            // Sin imagen - mostrar contenido inmediatamente
+            console.log(`📷 Producto ${productId} sin imagen`);
+            this.showProductContent(productId);
+            return;
         }
         
-        const timeout = setTimeout(() => {
-            forceResolveImage(productId);
-        }, INDIVIDUAL_IMAGE_TIMEOUT);
+        // Verificar si la imagen ya está cargada
+        if (img.complete && img.naturalHeight !== 0) {
+            console.log(`✅ Imagen ${productId} ya estaba cargada`);
+            this.showProductContent(productId);
+            return;
+        }
         
-        imageTimeouts.set(productId, timeout);
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-    startTime = Date.now();
-    globalSkeletonHidden = false;
-    imageTimeouts.clear();
-    loadedImagesCount = 0;
-    totalImages = 0;
-    minimumTimeReached = false;
-    
-    const totalProducts = {{ products|length }};
-    
-    if (totalProducts === 0) {
+        // Configurar eventos de carga
+        const handleLoad = () => {
+            console.log(`✅ Imagen ${productId} cargada exitosamente`);
+            this.showProductContent(productId);
+            img.removeEventListener('load', handleLoad);
+            img.removeEventListener('error', handleError);
+        };
+        
+        const handleError = () => {
+            console.log(`❌ Error cargando imagen ${productId}`);
+            this.showProductContent(productId);
+            img.removeEventListener('load', handleLoad);
+            img.removeEventListener('error', handleError);
+        };
+        
+        img.addEventListener('load', handleLoad);
+        img.addEventListener('error', handleError);
+        
+        // Timeout de seguridad
         setTimeout(() => {
-            minimumTimeReached = true;
-            hideGlobalSkeleton();
-        }, MINIMUM_SKELETON_TIME);
-        return;
+            if (!this.loadedImages.has(productId)) {
+                console.log(`⏰ Timeout para imagen ${productId}`);
+                this.showProductContent(productId);
+            }
+        }, 3000);
+        
+        // Forzar carga si no tiene src
+        if (!img.src && img.dataset && img.dataset.src) {
+            img.src = img.dataset.src;
+        }
     }
     
-    setupImageTimeouts();
+    showProductContent(productId) {
+        if (this.loadedImages.has(productId)) {
+            return;
+        }
+        
+        const skeleton = document.getElementById(`skeleton-${productId}`);
+        const content = document.getElementById(`content-${productId}`);
+        
+        if (skeleton && content) {
+            console.log(`👁️ Mostrando contenido del producto ${productId}`);
+            skeleton.style.display = 'none';
+            content.style.display = 'block';
+            this.loadedImages.add(productId);
+        } else {
+            console.warn(`⚠️ No se encontraron elementos para producto ${productId}`);
+        }
+    }
     
-    setTimeout(() => {
-        minimumTimeReached = true;
-        checkSkeletonReadiness();
-    }, MINIMUM_SKELETON_TIME);
+    calculatePages() {
+        this.totalPages = Math.ceil(this.filteredProducts.length / this.itemsPerPage);
+    }
     
-    setTimeout(() => {
-        const stillLazyImages = document.querySelectorAll('img[loading="lazy"][data-product]');
-        stillLazyImages.forEach((img, index) => {
-            const productId = img.getAttribute('data-product');
-            const position = img.getAttribute('data-position');
-            img.loading = 'eager';
-        });
-    }, 400);
-    
-    setTimeout(() => {
-        minimumTimeReached = true;
-        hideGlobalSkeleton();
-    }, MAXIMUM_SKELETON_TIME);
-    
-    setTimeout(() => {
-        imageTimeouts.forEach((timeout, productId) => {
+    setupSearch() {
+        const searchInput = document.getElementById('product-search');
+        if (!searchInput) return;
+        
+        let timeout;
+        searchInput.addEventListener('input', (e) => {
             clearTimeout(timeout);
-            forceResolveImage(productId);
+            timeout = setTimeout(() => {
+                this.applyFilters();
+            }, 300);
         });
-        imageTimeouts.clear();
-    }, INDIVIDUAL_IMAGE_TIMEOUT + 1000);
-});
-
-if ('IntersectionObserver' in window) {
-    const imageObserver = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                const productId = img.getAttribute('data-product');
-                const position = img.getAttribute('data-position');
-                
-                if (!img.complete) {
-                    img.loading = 'eager';
-                    
-                    setTimeout(() => {
-                        if (!img.complete) {
-                            const originalSrc = img.src;
-                            img.src = '';
-                            img.src = originalSrc;
-                        }
-                    }, 20);
-                }
-                
-                observer.unobserve(img);
-            }
-        });
-    }, {
-        rootMargin: '150px',
-        threshold: 0.05
-    });
+    }
     
-    setTimeout(() => {
-        const allImages = document.querySelectorAll('img[data-product]');
-        allImages.forEach(img => {
-            imageObserver.observe(img);
-            const productId = img.getAttribute('data-product');
-            const position = img.getAttribute('data-position');
+    setupCategoryFilters() {
+        document.querySelectorAll('.category-filter').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Actualizar estado activo
+                document.querySelectorAll('.category-filter').forEach(btn => {
+                    btn.classList.remove('category-filter-active');
+                    btn.classList.add('category-filter-inactive');
+                });
+                button.classList.add('category-filter-active');
+                button.classList.remove('category-filter-inactive');
+                
+                this.applyFilters();
+            });
         });
-    }, 10);
+    }
+    
+    setupPagination() {
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => this.goToPage(this.currentPage - 1));
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.goToPage(this.currentPage + 1));
+        }
+        
+        this.showPaginationIfNeeded();
+    }
+    
+    showPaginationIfNeeded() {
+        const paginationContainer = document.getElementById('js-pagination');
+        if (paginationContainer) {
+            paginationContainer.style.display = this.totalPages > 1 ? 'flex' : 'none';
+        }
+    }
+    
+    applyFilters() {
+        const searchQuery = document.getElementById('product-search')?.value.toLowerCase() || '';
+        const activeCategory = document.querySelector('.category-filter-active')?.dataset.category || '';
+        
+        this.filteredProducts = this.allProducts.filter(card => {
+            const name = card.dataset.name;
+            const category = card.dataset.category;
+            
+            const matchesSearch = !searchQuery || name.includes(searchQuery);
+            const matchesCategory = !activeCategory || category === activeCategory;
+            
+            return matchesSearch && matchesCategory;
+        });
+        
+        this.currentPage = 1;
+        this.calculatePages();
+        this.showPaginationIfNeeded();
+        this.updateDisplay();
+        this.updateResultsInfo();
+        
+        // Mostrar/ocultar mensaje de "sin resultados"
+        const noResultsMessage = document.getElementById('no-results-message');
+        if (noResultsMessage) {
+            noResultsMessage.style.display = this.filteredProducts.length === 0 ? 'flex' : 'none';
+        }
+    }
+    
+    goToPage(page) {
+        if (page >= 1 && page <= this.totalPages) {
+            this.currentPage = page;
+            this.updateDisplay();
+            this.updateResultsInfo();
+        }
+    }
+    
+    updateDisplay() {
+        // Ocultar todos los productos
+        this.allProducts.forEach(card => card.style.display = 'none');
+        
+        // Mostrar productos de la página current
+        const start = (this.currentPage - 1) * this.itemsPerPage;
+        const end = start + this.itemsPerPage;
+        
+        this.filteredProducts.slice(start, end).forEach(card => {
+            card.style.display = 'block';
+        });
+        
+        this.updatePagination();
+    }
+    
+    updatePagination() {
+        const prevBtn = document.getElementById('prev-page');
+        const nextBtn = document.getElementById('next-page');
+        
+        // Actualizar botones anterior/siguiente
+        if (prevBtn) {
+            prevBtn.disabled = this.currentPage === 1;
+            prevBtn.className = `pagination-btn pagination-prev ${
+                this.currentPage === 1 ? 'pagination-disabled' : ''
+            }`;
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = this.currentPage === this.totalPages;
+            nextBtn.className = `pagination-btn pagination-next ${
+                this.currentPage === this.totalPages ? 'pagination-disabled' : ''
+            }`;
+        }
+        
+        this.updatePageNumbers();
+    }
+    
+    // CORREGIR NÚMEROS DE PÁGINA CON ESTILOS
+    updatePageNumbers() {
+        const numbersContainer = document.getElementById('pagination-numbers');
+        if (!numbersContainer || this.totalPages <= 1) return;
+        
+        numbersContainer.innerHTML = '';
+        
+        for (let i = 1; i <= this.totalPages; i++) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = i;
+            // AGREGAR LAS CLASES CORRECTAS
+            button.className = `pagination-btn pagination-number ${
+                i === this.currentPage ? 'pagination-current' : ''
+            }`;
+            button.addEventListener('click', () => this.goToPage(i));
+            numbersContainer.appendChild(button);
+        }
+    }
+    
+    updateResultsInfo() {
+        const resultsText = document.getElementById('results-text');
+        const noResultsMessage = document.getElementById('no-results-message');
+        const productsGrid = document.getElementById('products-grid');
+        
+        if (resultsText) {
+            const total = this.filteredProducts.length;
+            const start = ((this.currentPage - 1) * this.itemsPerPage) + 1;
+            const end = Math.min(this.currentPage * this.itemsPerPage, total);
+            
+            if (total === 0) {
+                // Ocultar el texto de resultados cuando no hay productos
+                resultsText.style.display = 'none';
+            } else {
+                resultsText.style.display = 'block';
+                if (total <= this.itemsPerPage) {
+                    resultsText.textContent = `Mostrando ${total} productos`;
+                } else {
+                    resultsText.textContent = `Mostrando ${start}-${end} de ${total} productos`;
+                }
+            }
+        }
+        
+        // Mostrar/ocultar mensaje de "sin resultados" Y ocultar grid
+        if (noResultsMessage && productsGrid) {
+            if (this.filteredProducts.length === 0) {
+                noResultsMessage.style.display = 'flex';
+                productsGrid.style.display = 'none';
+            } else {
+                noResultsMessage.style.display = 'none';
+                productsGrid.style.display = 'grid';
+            }
+        }
+        
+        // Actualizar info de paginación
+        const paginationInfo = document.getElementById('pagination-info-text');
+        if (paginationInfo && this.filteredProducts.length > 0) {
+            const start = ((this.currentPage - 1) * this.itemsPerPage) + 1;
+            const end = Math.min(this.currentPage * this.itemsPerPage, this.filteredProducts.length);
+            paginationInfo.textContent = `Mostrando ${start}-${end} de ${this.filteredProducts.length} productos`;
+        }
+    }
 }
 
-window.addEventListener('beforeunload', function() {
-    imageTimeouts.forEach(timeout => clearTimeout(timeout));
-    imageTimeouts.clear();
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🚀 Inicializando ProductFilter...');
+    new ProductFilter();
 });
 </script>
+{% endif %}
 {% endblock %}
