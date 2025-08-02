@@ -3597,6 +3597,36 @@ select {
 /* RESPONSIVE PARA RESUMEN */
 
 @media (max-width: 640px) {
+  .pagination-btn {
+    min-width: 36px;
+    justify-content: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .pagination-btn.pagination-prev span:not(.material-icons),
+    .pagination-btn.pagination-next span:not(.material-icons) {
+    display: none;
+  }
+
+  .pagination-numbers {
+    gap: 0.25rem;
+  }
+
+  .pagination-number {
+    display: flex;
+    height: 32px;
+    min-width: 32px;
+    align-items: center;
+    justify-content: center;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+
   .summary-product-item {
     padding-top: 0.75rem;
     padding-bottom: 0.75rem;
@@ -3667,6 +3697,10 @@ select {
 
 .mb-8 {
   margin-bottom: 2rem;
+}
+
+.ml-1 {
+  margin-left: 0.25rem;
 }
 
 .ml-2 {
@@ -4373,6 +4407,10 @@ input[type="password"]::-ms-clear {
 }
 
 @media (min-width: 640px) {
+  .sm\:inline {
+    display: inline;
+  }
+
   .sm\:grid-cols-2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

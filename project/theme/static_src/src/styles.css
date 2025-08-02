@@ -958,6 +958,23 @@
   }
   /* RESPONSIVE PARA RESUMEN */
   @media (max-width: 640px) {
+    .pagination-btn {
+      @apply px-2 py-2 min-w-[36px] justify-center;
+    }
+    
+    .pagination-btn.pagination-prev span:not(.material-icons),
+    .pagination-btn.pagination-next span:not(.material-icons) {
+      @apply hidden;
+    }
+    
+    .pagination-numbers {
+      @apply gap-1;
+    }
+    
+    .pagination-number {
+      @apply min-w-[32px] h-[32px] text-xs px-2 flex items-center justify-center;
+    }
+    
     .summary-product-item {
       @apply py-3;
     }
