@@ -248,8 +248,6 @@
 
 {% block step_js %}
 <script>
-console.log('🚀 Step 2 JavaScript iniciando...');
-
 // DATOS BÁSICOS
 const products = {
 {% for product in products %}
@@ -276,13 +274,9 @@ let productsPerPage = 12;
 let filteredProducts = [];
 let allProductElements = [];
 
-console.log('📊 Datos cargados:');
-console.log('- Productos:', Object.keys(products).length);
-
 // SISTEMA DE PAGINACIÓN CORREGIDO
 window.PaginationSystem = {
     init() {
-        console.log('📄 Inicializando sistema de paginación...');
         allProductElements = Array.from(document.querySelectorAll('.product-modal-card'));
         filteredProducts = [...allProductElements];
         this.setupPagination();
@@ -323,7 +317,6 @@ window.PaginationSystem = {
     },
 
     loadCurrentPageImages(visibleProducts) {
-        console.log('🖼️ Cargando imágenes de la página actual...');
         visibleProducts.forEach(productCard => {
             const productId = productCard.getAttribute('data-product-id');
             const img = document.getElementById(`img-${productId}`);
@@ -443,7 +436,6 @@ window.ImageLoader = {
     errorImages: new Set(),
     
     init() {
-        console.log('🔧 Inicializando ImageLoader...');
         // NO configurar IntersectionObserver para evitar conflictos con paginación
         // Las imágenes se cargarán cuando la página las muestre
     },
@@ -452,8 +444,6 @@ window.ImageLoader = {
         if (this.loadedImages.has(productId) || this.errorImages.has(productId)) {
             return;
         }
-        
-        console.log(`🖼️ Cargando imagen para producto ${productId}`);
         
         const skeleton = document.getElementById(`skeleton-${productId}`);
         const imageUrl = img.getAttribute('data-src') || img.src;
@@ -466,7 +456,6 @@ window.ImageLoader = {
         const newImg = new Image();
         
         newImg.onload = () => {
-            console.log(`✅ Imagen cargada para producto ${productId}`);
             this.loadedImages.add(productId);
             img.src = imageUrl;
             img.style.display = 'block';
@@ -478,7 +467,6 @@ window.ImageLoader = {
         };
         
         newImg.onerror = () => {
-            console.log(`❌ Error al cargar imagen para producto ${productId}`);
             this.errorImages.add(productId);
             this.showErrorPlaceholder(productId);
         };
@@ -520,7 +508,6 @@ window.ImageLoader = {
 
 // FUNCIONES DEL MODAL
 window.openModal = function() {
-    console.log('📂 Abriendo modal...');
     const modal = document.getElementById('products-modal');
     if (modal) {
         modal.classList.add('active');
@@ -531,23 +518,18 @@ window.openModal = function() {
             window.PaginationSystem.init();
             window.PaginationSystem.initialized = true;
         }
-        
-        console.log('✅ Modal abierto');
     }
 };
 
 window.closeModal = function() {
-    console.log('🔒 Cerrando modal...');
     const modal = document.getElementById('products-modal');
     if (modal) {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
-        console.log('✅ Modal cerrado');
     }
 };
 
 window.viewProductDetails = function(productId) {
-    console.log('🔍 Ver detalles del producto:', productId);
     const detailUrl = `/products/${productId}/`;
     window.open(detailUrl, '_blank');
 };
@@ -906,8 +888,6 @@ window.updateEmptyMessage = function(visibleCount) {
 
 // EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔧 Configurando event listeners...');
-    
     const addProductsBtn = document.getElementById('add-products-btn');
     if (addProductsBtn) {
         addProductsBtn.addEventListener('click', window.openModal);
@@ -946,8 +926,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.setupSearch();
     window.setupCategoryFilters();
     window.ImageLoader.init();
-    
-    console.log('✅ Todos los event listeners configurados');
 });
 </script>
 {% endblock %}
