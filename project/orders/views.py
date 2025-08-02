@@ -234,14 +234,106 @@ def order_step3(request):
     """Step 3: Confirmación y pago"""
     # Verificar que se hayan completado los pasos anteriores
     cart_data = request.session.get('order_cart', {})
-    if 'order_info' not in cart_data or 'items' not in cart_data:
+    
+    if 'order_info' not in cart_data or 'selected_products' not in cart_data:
         messages.warning(request, "Debes completar los pasos anteriores.")
         return redirect('orders:step1')
     
+    order_info = cart_data.get('order_info', {})
+    selected_products = cart_data.get('selected_products', {})
+    
+    if request.method == 'POST':
+        # Crear el pedido final
+        payment_method = request.POST.get('payment_method', 'cash')
+        order_notes = request.POST.get('order_notes', '')
+        
+        try:
+            # Crear el pedido
+            order = Order.objects.create(
+                user=request.user,
+                delivery_type=order_info.get('delivery_type', 'pickup'),
+                customer_name=order_info.get('customer_name', ''),
+                customer_phone=order_info.get('customer_phone', ''),
+                customer_email=order_info.get('customer_email', ''),
+                desired_date=datetime.strptime(order_info.get('desired_date'), '%Y-%m-%d').date(),
+                desired_time=datetime.strptime(order_info.get('desired_time'), '%H:%M').time(),
+                delivery_address=order_info.get('delivery_address', ''),
+                delivery_neighborhood=order_info.get('delivery_neighborhood', ''),
+                delivery_references=order_info.get('delivery_references', ''),
+                payment_method=payment_method,
+                special_instructions=order_notes,
+                status='pending'
+            )
+            
+            # Crear los items del pedido
+            total_amount = 0
+            for product_id, quantity in selected_products.items():
+                product = get_object_or_404(Product, id=product_id)
+                quantity = int(quantity)
+                
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=product.price,
+                    total_price=product.price * quantity
+                )
+                
+                total_amount += product.price * quantity
+            
+            # Calcular envío
+            settings = BusinessSettings.get_settings()
+            shipping_cost = 0 if total_amount >= settings.free_delivery_threshold else 5000
+            
+            # Actualizar totales del pedido
+            order.subtotal = total_amount
+            order.shipping_cost = shipping_cost
+            order.total_amount = total_amount + shipping_cost
+            order.save()
+            
+            # Limpiar sesión
+            if 'order_cart' in request.session:
+                del request.session['order_cart']
+            
+            messages.success(request, f"¡Pedido #{order.id} creado exitosamente!")
+            return redirect('orders:order_detail', order_id=order.id)
+            
+        except Exception as e:
+            messages.error(request, f"Error al crear el pedido: {str(e)}")
+    
+    # Preparar datos para el template
+    products_data = {}
+    for product_id in selected_products.keys():
+        try:
+            product = Product.objects.get(id=product_id)
+            products_data[str(product_id)] = {
+                'name': product.name,
+                'price': float(product.price)
+            }
+        except Product.DoesNotExist:
+            continue
+    
+    # Configuración de steps para el template base
+    all_steps = [
+        {'number': 1, 'title': 'Información Básica', 'short_title': 'Información'},
+        {'number': 2, 'title': 'Selección de Productos', 'short_title': 'Productos'},
+        {'number': 3, 'title': 'Confirmación y Pago', 'short_title': 'Confirmación'},
+    ]
+    
     context = {
+        'order_info': order_info,
+        'selected_products': json.dumps(selected_products),
+        'products_data': json.dumps(products_data),
+        'settings': BusinessSettings.get_settings(),
+        
+        # Datos para el template base de steps
         'step_number': 3,
-        'step_title': 'Confirmación',
-        'step_description': 'Revisa y confirma tu pedido'
+        'current_step': 3,
+        'step_title': 'Confirmación y Pago',
+        'step_description': 'Revisa tu pedido y selecciona el método de pago',
+        'all_steps': all_steps,
+        'next_step_text': 'Confirmar Pedido',
+        'previous_step_url': reverse('orders:step2'),
     }
     
     return render(request, 'orders/step3.html', context)

@@ -928,7 +928,34 @@
   #order-items::-webkit-scrollbar-thumb {
     @apply bg-orange-300 rounded-full hover:bg-orange-400;
   }
+  /* STEP 3 - PAYMENT STYLES */
+  .payment-option-card {
+    @apply bg-white border border-gray-200 rounded-lg p-3 transition-all duration-200 ease-out hover:border-gray-300 hover:shadow-sm cursor-pointer;
+  }
 
+  .payment-option-content {
+    @apply flex items-center space-x-3;
+  }
+
+  .payment-option-icon {
+    @apply flex-shrink-0;
+  }
+
+  .payment-option-text {
+    @apply flex-1 min-w-0;
+  }
+
+  .payment-option-title {
+    @apply text-sm font-medium text-gray-900;
+  }
+
+  .payment-option-description {
+    @apply text-xs text-gray-500;
+  }
+
+  .order-summary-section {
+    @apply space-y-3;
+  }
   /* RESPONSIVE PARA RESUMEN */
   @media (max-width: 640px) {
     .summary-product-item {

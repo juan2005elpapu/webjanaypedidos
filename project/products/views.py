@@ -8,8 +8,12 @@ from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from .models import Product, Category
+from orders.models import Order, OrderItem, BusinessSettings
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+import json
+from datetime import datetime
+from django.urls import reverse
 
 
 # SEÑALES PARA INVALIDAR CACHE AUTOMÁTICAMENTE
@@ -84,3 +88,4 @@ class ProductDetailView(LoginRequiredMixin, DetailView):
             # Si el producto no está disponible, redirigir con mensaje
             messages.error(self.request, 'El producto solicitado no está disponible.')
             return redirect('products:list')
+

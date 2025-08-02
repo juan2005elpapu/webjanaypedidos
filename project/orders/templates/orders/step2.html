@@ -2,7 +2,7 @@
 {% load humanize %}
 
 {% block step_content %}
-<form method="post" id="step-form" class="p-4 md:p-6">
+<form method="post" id="step-form" action="{% url 'orders:step3' %}" class="p-4 md:p-6">
     {% csrf_token %}
     
     <div class="step2-grid">
@@ -621,8 +621,37 @@ window.applySelection = function() {
         return;
     }
     
+    // Crear inputs hidden para enviar productos al backend
+    const hiddenContainer = document.getElementById('hidden-inputs');
+    hiddenContainer.innerHTML = ''; // Limpiar inputs anteriores
+    
+    selectedProducts.forEach(productId => {
+        const qtyInput = document.getElementById(`qty-${productId}`);
+        const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = `product_${productId}`;
+        input.value = quantity;
+        hiddenContainer.appendChild(input);
+    });
+    
+    // Agregar notas del pedido si existen
+    const notesTextarea = document.getElementById('order-notes');
+    if (notesTextarea && notesTextarea.value.trim()) {
+        const notesInput = document.createElement('input');
+        notesInput.type = 'hidden';
+        notesInput.name = 'order_notes';
+        notesInput.value = notesTextarea.value.trim();
+        hiddenContainer.appendChild(notesInput);
+    }
+    
+    // MANTENER las funciones originales
     window.updateMainProductsSection();
     window.closeModal();
+    
+    // NUEVO: Preparar para envío cuando se haga click en "Continuar a pago"
+    // (El botón submit enviará automáticamente los inputs hidden)
 };
 
 window.updateMainProductsSection = function() {

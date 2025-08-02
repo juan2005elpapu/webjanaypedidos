@@ -1,0 +1,363 @@
+{% extends "orders/base_step.html" %}
+{% load humanize %}
+
+{% block step_content %}
+<form method="post" id="step-form" class="p-4 md:p-6">
+    {% csrf_token %}
+    
+    <div class="step2-grid">
+        <!-- Sección principal - Resumen del pedido -->
+        <div class="step2-products-section">
+            <div class="selected-products-content p-4 md:p-6">
+                <!-- Header del resumen -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                        <span class="material-icons text-blue-600 mr-2 align-middle">receipt_long</span>
+                        Resumen de tu Pedido
+                    </h3>
+                    <p class="text-sm text-gray-600">Revisa todos los detalles antes de confirmar</p>
+                </div>
+
+                <!-- Información básica -->
+                <div class="order-summary-section mb-6">
+                    <h4 class="flex items-center text-md font-medium text-gray-900 mb-3">
+                        <span class="material-icons text-orange-600 mr-2">info</span>
+                        Información del Pedido
+                    </h4>
+                    <div class="info-box">
+                        <div class="info-box-content">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span class="font-medium text-gray-700">Tipo de entrega:</span>
+                                    <span id="summary-delivery-type" class="text-gray-900"></span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Fecha:</span>
+                                    <span id="summary-date" class="text-gray-900"></span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Hora:</span>
+                                    <span id="summary-time" class="text-gray-900"></span>
+                                </div>
+                                <div>
+                                    <span class="font-medium text-gray-700">Cliente:</span>
+                                    <span id="summary-customer" class="text-gray-900"></span>
+                                </div>
+                                <div class="md:col-span-2" id="summary-address-container" style="display: none;">
+                                    <span class="font-medium text-gray-700">Dirección:</span>
+                                    <span id="summary-address" class="text-gray-900"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Productos seleccionados -->
+                <div class="order-summary-section mb-6">
+                    <h4 class="flex items-center text-md font-medium text-gray-900 mb-3">
+                        <span class="material-icons text-green-600 mr-2">shopping_cart</span>
+                        Productos (<span id="products-count">0</span>)
+                    </h4>
+                    <div class="products-selected-container max-h-64" id="products-summary">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Notas especiales -->
+                <div id="notes-section" class="order-summary-section mb-6" style="display: none;">
+                    <h4 class="flex items-center text-md font-medium text-gray-900 mb-3">
+                        <span class="material-icons text-purple-600 mr-2">note</span>
+                        Notas Especiales
+                    </h4>
+                    <div class="info-box">
+                        <div class="info-box-content">
+                            <p id="order-notes-display" class="text-sm text-gray-900"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar - Método de pago y totales -->
+        <div class="step2-summary-section">
+            <!-- Totales -->
+            <div class="order-summary mb-4">
+                <h3 class="order-summary-title">
+                    <span class="material-icons text-orange-600 mr-2 align-middle">calculate</span>
+                    Total del Pedido
+                </h3>
+                
+                <div class="mt-4 space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Subtotal:</span>
+                        <span id="final-subtotal">$0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Envío:</span>
+                        <span id="final-shipping">Gratis</span>
+                    </div>
+                    <div class="flex justify-between font-semibold text-lg text-orange-600 pt-2 border-t border-orange-200">
+                        <span>Total Final:</span>
+                        <span id="final-total">$0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Método de pago -->
+            <div class="order-summary">
+                <h3 class="order-summary-title">
+                    <span class="material-icons text-green-600 mr-2 align-middle">payment</span>
+                    Método de Pago
+                </h3>
+                
+                <div class="mt-4 space-y-3">
+                    <!-- Efectivo -->
+                    <label class="radio-option">
+                        <input type="radio" name="payment_method" value="cash" 
+                               class="radio-option-input peer" checked>
+                        <div class="payment-option-card peer-checked:border-green-500 peer-checked:bg-green-50">
+                            <div class="payment-option-content">
+                                <div class="payment-option-icon">
+                                    <span class="material-icons text-green-600">payments</span>
+                                </div>
+                                <div class="payment-option-text">
+                                    <div class="payment-option-title">Efectivo</div>
+                                    <div class="payment-option-description">Pago al recibir</div>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- Transferencia -->
+                    <label class="radio-option">
+                        <input type="radio" name="payment_method" value="transfer" 
+                               class="radio-option-input peer">
+                        <div class="payment-option-card peer-checked:border-blue-500 peer-checked:bg-blue-50">
+                            <div class="payment-option-content">
+                                <div class="payment-option-icon">
+                                    <span class="material-icons text-blue-600">account_balance</span>
+                                </div>
+                                <div class="payment-option-text">
+                                    <div class="payment-option-title">Transferencia</div>
+                                    <div class="payment-option-description">Bancolombia, Nequi</div>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- PSE -->
+                    <label class="radio-option">
+                        <input type="radio" name="payment_method" value="pse" 
+                               class="radio-option-input peer">
+                        <div class="payment-option-card peer-checked:border-purple-500 peer-checked:bg-purple-50">
+                            <div class="payment-option-content">
+                                <div class="payment-option-icon">
+                                    <span class="material-icons text-purple-600">credit_card</span>
+                                </div>
+                                <div class="payment-option-text">
+                                    <div class="payment-option-title">PSE</div>
+                                    <div class="payment-option-description">Pago seguro en línea</div>
+                                </div>
+                            </div>
+                        </div>
+                    </label>
+
+                    <!-- Información del método seleccionado -->
+                    <div id="payment-info" class="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
+                        <div id="cash-info">
+                            <p><strong>Efectivo:</strong> Paga al recibir tu pedido. Ten el monto exacto disponible.</p>
+                        </div>
+                        <div id="transfer-info" style="display: none;">
+                            <p><strong>Transferencia:</strong> Recibirás los datos bancarios por WhatsApp para completar el pago.</p>
+                        </div>
+                        <div id="pse-info" style="display: none;">
+                            <p><strong>PSE:</strong> Serás redirigido a la plataforma de tu banco para completar el pago.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Validación mínima -->
+            <div id="minimum-order-warning" class="order-invalid-message mt-4" style="display: none;">
+                <p class="order-invalid-text">
+                    <span class="material-icons text-sm align-middle mr-1">warning</span>
+                    El pedido mínimo es $<span id="minimum-amount">20,000</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inputs hidden para enviar datos -->
+    <div id="final-order-data">
+        <!-- Se llenará dinámicamente -->
+    </div>
+</form>
+{% endblock %}
+
+{% block step_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar datos del pedido desde sessionStorage o desde el servidor
+    loadOrderSummary();
+    setupPaymentMethodChange();
+    validateMinimumOrder();
+
+    function loadOrderSummary() {
+        // Obtener datos de la sesión (deberías pasarlos desde el backend)
+        const orderInfo = {
+            delivery_type: '{{ order_info.delivery_type|default:"pickup" }}',
+            customer_name: '{{ order_info.customer_name|escapejs }}',
+            desired_date: '{{ order_info.desired_date|escapejs }}',
+            desired_time: '{{ order_info.desired_time|escapejs }}',
+            delivery_address: '{{ order_info.delivery_address|escapejs }}',
+        };
+
+        const selectedProducts = {{ selected_products|safe }};
+        const settings = {
+            minimumOrder: {{ settings.minimum_order_amount|default:20000 }},
+            freeDeliveryThreshold: {{ settings.free_delivery_threshold|default:50000 }}
+        };
+
+        // Llenar información básica
+        document.getElementById('summary-delivery-type').textContent = 
+            orderInfo.delivery_type === 'delivery' ? 'Delivery a domicilio' : 'Recoger en tienda';
+        
+        document.getElementById('summary-date').textContent = formatDate(orderInfo.desired_date);
+        document.getElementById('summary-time').textContent = orderInfo.desired_time;
+        document.getElementById('summary-customer').textContent = orderInfo.customer_name;
+
+        if (orderInfo.delivery_type === 'delivery' && orderInfo.delivery_address) {
+            document.getElementById('summary-address-container').style.display = 'block';
+            document.getElementById('summary-address').textContent = orderInfo.delivery_address;
+        }
+
+        // Llenar productos
+        displayProducts(selectedProducts);
+        calculateFinalTotals(selectedProducts, settings);
+
+        // Mostrar notas si existen
+        const notes = sessionStorage.getItem('order_notes');
+        if (notes && notes.trim()) {
+            document.getElementById('notes-section').style.display = 'block';
+            document.getElementById('order-notes-display').textContent = notes;
+        }
+
+        // Crear inputs hidden para envío
+        createHiddenInputs(orderInfo, selectedProducts, notes);
+    }
+
+    function displayProducts(selectedProducts) {
+        const container = document.getElementById('products-summary');
+        const count = Object.keys(selectedProducts).length;
+        
+        document.getElementById('products-count').textContent = count;
+
+        let html = '';
+        for (const [productId, quantity] of Object.entries(selectedProducts)) {
+            const product = {{ products_data|safe }}[productId];
+            if (product) {
+                const subtotal = product.price * quantity;
+                html += `
+                    <div class="selected-product-item">
+                        <div class="selected-product-info">
+                            <h4 class="selected-product-name">${product.name}</h4>
+                            <div class="text-xs text-gray-500">
+                                ${quantity} × $${parseInt(product.price).toLocaleString()}
+                            </div>
+                        </div>
+                        <div class="selected-product-price">
+                            $${subtotal.toLocaleString()}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        container.innerHTML = html;
+    }
+
+    function calculateFinalTotals(selectedProducts, settings) {
+        let subtotal = 0;
+        
+        for (const [productId, quantity] of Object.entries(selectedProducts)) {
+            const product = {{ products_data|safe }}[productId];
+            if (product) {
+                subtotal += product.price * quantity;
+            }
+        }
+
+        const shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+        const total = subtotal + shipping;
+
+        document.getElementById('final-subtotal').textContent = `$${subtotal.toLocaleString()}`;
+        document.getElementById('final-shipping').textContent = 
+            shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
+        document.getElementById('final-total').textContent = `$${total.toLocaleString()}`;
+
+        // Validar pedido mínimo
+        const warning = document.getElementById('minimum-order-warning');
+        document.getElementById('minimum-amount').textContent = settings.minimumOrder.toLocaleString();
+        
+        if (subtotal < settings.minimumOrder) {
+            warning.style.display = 'block';
+            document.querySelector('button[type="submit"]').disabled = true;
+            document.querySelector('button[type="submit"]').classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            warning.style.display = 'none';
+            document.querySelector('button[type="submit"]').disabled = false;
+            document.querySelector('button[type="submit"]').classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function setupPaymentMethodChange() {
+        const radios = document.querySelectorAll('input[name="payment_method"]');
+        radios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                // Ocultar todas las infos
+                document.getElementById('cash-info').style.display = 'none';
+                document.getElementById('transfer-info').style.display = 'none';
+                document.getElementById('pse-info').style.display = 'none';
+                
+                // Mostrar la info correspondiente
+                document.getElementById(this.value + '-info').style.display = 'block';
+            });
+        });
+    }
+
+    function createHiddenInputs(orderInfo, selectedProducts, notes) {
+        const container = document.getElementById('final-order-data');
+        
+        // Información básica
+        for (const [key, value] of Object.entries(orderInfo)) {
+            if (value) {
+                container.innerHTML += `<input type="hidden" name="${key}" value="${value}">`;
+            }
+        }
+
+        // Productos
+        for (const [productId, quantity] of Object.entries(selectedProducts)) {
+            container.innerHTML += `<input type="hidden" name="product_${productId}" value="${quantity}">`;
+        }
+
+        // Notas
+        if (notes) {
+            container.innerHTML += `<input type="hidden" name="order_notes" value="${notes}">`;
+        }
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+    }
+
+    function validateMinimumOrder() {
+        // Esta función ya se ejecuta en calculateFinalTotals
+    }
+});
+</script>
+{% endblock %}
