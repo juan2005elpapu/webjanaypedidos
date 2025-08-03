@@ -2,7 +2,7 @@
 {% load humanize %}
 
 {% block step_content %}
-<form method="post" id="step-form" action="{% url 'orders:step3' %}" class="p-4 md:p-6">
+<form method="post" id="step-form"  class="p-4 md:p-6">
     {% csrf_token %}
     
     <div class="step2-grid">

@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const selectedProducts = {{ selected_products|safe }};
         const settings = {
-            minimumOrder: {{ settings.minimum_order_amount|default:20000 }},
-            freeDeliveryThreshold: {{ settings.free_delivery_threshold|default:50000 }}
+            minimumOrder: {{ settings.minimum_order_amount|default:20000|floatformat:0 }},
+            freeDeliveryThreshold: {{ settings.free_delivery_threshold|default:50000|floatformat:0 }}
         };
 
         // Llenar información básica
