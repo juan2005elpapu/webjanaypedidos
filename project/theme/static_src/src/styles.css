@@ -359,9 +359,8 @@
 
   /* Estado vacío */
   .empty-state {
-    @apply col-span-full text-center py-8;
+    @apply col-span-full flex flex-col items-center justify-center text-center py-8 min-h-32;
   }
-
   .empty-state-text {
     @apply text-gray-500;
   }

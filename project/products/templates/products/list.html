@@ -1,4 +1,3 @@
-<!-- products/list.html - HÍBRIDO JS + SERVER -->
 {% extends "core/base_dashboard.html" %}
 {% load humanize %}
 
@@ -202,25 +201,21 @@ class ProductFilter {
         this.initImageLoading(); // CARGAR DESPUÉS
         this.updateDisplay();
         
-        console.log(`🔍 Filtrado JS activo para ${this.allProducts.length} productos`);
     }
     
     // CONFIGURAR EVENTOS DE IMAGEN PRIMERO
     setupImageEvents() {
         window.productImageLoaded = (productId) => {
-            console.log(`✅ Imagen cargada: ${productId}`);
             this.showProductContent(productId.toString());
         };
         
         window.productImageError = (productId) => {
-            console.log(`❌ Error cargando imagen: ${productId}`);
             this.showProductContent(productId.toString());
         };
     }
     
     // CARGA DE IMÁGENES SIMPLIFICADA
     initImageLoading() {
-        console.log('🖼️ Iniciando carga de imágenes...');
         
         // Cargar todas las imágenes con delay progresivo
         this.allProducts.forEach((card, index) => {
@@ -240,34 +235,29 @@ class ProductFilter {
             return;
         }
         
-        console.log(`🔄 Cargando imagen del producto ${productId}`);
-        
         const img = card.querySelector(`#img-${productId}`);
         
         if (!img) {
             // Sin imagen - mostrar contenido inmediatamente
-            console.log(`📷 Producto ${productId} sin imagen`);
             this.showProductContent(productId);
             return;
         }
         
         // Verificar si la imagen ya está cargada
         if (img.complete && img.naturalHeight !== 0) {
-            console.log(`✅ Imagen ${productId} ya estaba cargada`);
+
             this.showProductContent(productId);
             return;
         }
         
         // Configurar eventos de carga
         const handleLoad = () => {
-            console.log(`✅ Imagen ${productId} cargada exitosamente`);
             this.showProductContent(productId);
             img.removeEventListener('load', handleLoad);
             img.removeEventListener('error', handleError);
         };
         
         const handleError = () => {
-            console.log(`❌ Error cargando imagen ${productId}`);
             this.showProductContent(productId);
             img.removeEventListener('load', handleLoad);
             img.removeEventListener('error', handleError);
@@ -279,7 +269,6 @@ class ProductFilter {
         // Timeout de seguridad
         setTimeout(() => {
             if (!this.loadedImages.has(productId)) {
-                console.log(`⏰ Timeout para imagen ${productId}`);
                 this.showProductContent(productId);
             }
         }, 3000);
@@ -299,7 +288,6 @@ class ProductFilter {
         const content = document.getElementById(`content-${productId}`);
         
         if (skeleton && content) {
-            console.log(`👁️ Mostrando contenido del producto ${productId}`);
             skeleton.style.display = 'none';
             content.style.display = 'block';
             this.loadedImages.add(productId);
@@ -503,7 +491,6 @@ class ProductFilter {
 
 // Inicializar cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Inicializando ProductFilter...');
     new ProductFilter();
 });
 </script>
