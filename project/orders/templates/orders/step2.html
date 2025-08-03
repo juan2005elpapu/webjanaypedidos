@@ -314,6 +314,9 @@ window.PaginationSystem = {
 
         this.updatePaginationUI();
         this.updatePaginationInfo();
+        
+        // AÑADIR ESTA LÍNEA: Sincronizar estados después de cambiar de página
+        setTimeout(() => window.syncModalProductStates(), 50);
     },
 
     loadCurrentPageImages(visibleProducts) {
@@ -564,26 +567,74 @@ window.handleProductClick = function(productId) {
 };
 
 window.toggleProductSelection = function(productId) {
-    const card = document.querySelector(`[data-product-id="${productId}"]`);
+    console.log(`🔄 TOGGLE INICIADO para producto ${productId}`);
+    
+    // Obtener TODAS las tarjetas con este product-id (por si hay duplicados en DOM)
+    const cards = document.querySelectorAll(`[data-product-id="${productId}"]`);
     const badge = document.getElementById(`badge-${productId}`);
     const stateNormal = document.getElementById(`state-normal-${productId}`);
     const stateSelected = document.getElementById(`state-selected-${productId}`);
     
+    // Log del estado actual
+    console.log(`📊 Estado actual:`, {
+        productId,
+        estaba_seleccionado: selectedProducts.has(productId),
+        cards_encontradas: cards.length,
+        badge_display: badge?.style.display,
+        state_normal_display: stateNormal?.style.display,
+        state_selected_display: stateSelected?.style.display
+    });
+    
     if (selectedProducts.has(productId)) {
+        // DESELECCIONAR
+        console.log(`❌ DESELECCIONANDO producto ${productId}`);
         selectedProducts.delete(productId);
-        card?.classList.remove('selected');
-        if (badge) badge.style.display = 'none';
-        if (stateNormal) stateNormal.style.display = 'flex';
-        if (stateSelected) stateSelected.style.display = 'none';
+        
+        // Actualizar TODAS las tarjetas encontradas
+        cards.forEach(card => {
+            card.classList.remove('selected');
+        });
+        console.log(`📦 ${cards.length} Cards actualizadas: clase 'selected' removida`);
+        
+        if (badge) {
+            badge.style.display = 'none';
+            console.log(`🏷️ Badge ${productId}: ocultado`);
+        }
+        if (stateNormal) {
+            stateNormal.style.display = 'flex';
+            console.log(`🔄 StateNormal ${productId}: mostrado`);
+        }
+        if (stateSelected) {
+            stateSelected.style.display = 'none';
+            console.log(`✅ StateSelected ${productId}: ocultado`);
+        }
     } else {
+        // SELECCIONAR
+        console.log(`✅ SELECCIONANDO producto ${productId}`);
         selectedProducts.add(productId);
-        card?.classList.add('selected');
-        if (badge) badge.style.display = 'flex';
-        if (stateNormal) stateNormal.style.display = 'none';
-        if (stateSelected) stateSelected.style.display = 'flex';
+        
+        // Actualizar TODAS las tarjetas encontradas
+        cards.forEach(card => {
+            card.classList.add('selected');
+        });
+        console.log(`📦 ${cards.length} Cards actualizadas: clase 'selected' agregada`);
+        
+        if (badge) {
+            badge.style.display = 'flex';
+            console.log(`🏷️ Badge ${productId}: mostrado`);
+        }
+        if (stateNormal) {
+            stateNormal.style.display = 'none';
+            console.log(`🔄 StateNormal ${productId}: ocultado`);
+        }
+        if (stateSelected) {
+            stateSelected.style.display = 'flex';
+            console.log(`✅ StateSelected ${productId}: mostrado`);
+        }
     }
     
     window.updateSelectedCount();
+    console.log(`🔄 TOGGLE COMPLETADO para producto ${productId}`);
 };
 
 window.updateSelectedCount = function() {
@@ -614,6 +665,7 @@ window.clearSelection = function() {
     
     window.updateSelectedCount();
 };
+
 
 // NUEVA FUNCIÓN PARA ACTUALIZAR INPUTS HIDDEN
 window.updateHiddenInputs = function() {
@@ -1025,6 +1077,67 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100); // Pequeño delay para asegurar que el valor se haya actualizado
         }
     });
+    
+    // Sincronizar estados de productos en el modal al cargar
+    window.syncModalProductStates();
 });
+
+window.syncModalProductStates = function() {
+    console.log(`🔄 SINCRONIZACIÓN INICIADA`);
+    console.log(`📋 Productos seleccionados:`, Array.from(selectedProducts));
+    
+    // Mantener registro de productos procesados para evitar duplicados
+    const procesados = new Set();
+    
+    // Recorrer todas las cards del modal
+    document.querySelectorAll('.product-modal-card').forEach(card => {
+        const productId = card.getAttribute('data-product-id');
+        
+        // Si ya procesamos este producto, omitirlo (para optimización)
+        if (procesados.has(productId)) return;
+        procesados.add(productId);
+        
+        // Obtener TODAS las tarjetas de este producto
+        const todasLasCards = document.querySelectorAll(`[data-product-id="${productId}"]`);
+        
+        const badge = document.getElementById(`badge-${productId}`);
+        const stateNormal = document.getElementById(`state-normal-${productId}`);
+        const stateSelected = document.getElementById(`state-selected-${productId}`);
+        
+        const estaSeleccionado = selectedProducts.has(productId);
+        
+        console.log(`🔍 Verificando producto ${productId}:`, {
+            esta_seleccionado: estaSeleccionado,
+            cards_encontradas: todasLasCards.length
+        });
+        
+        // Actualizar todas las instancias de este producto
+        todasLasCards.forEach(card => {
+            const tieneClaseSelected = card.classList.contains('selected');
+            
+            if (estaSeleccionado && !tieneClaseSelected) {
+                card.classList.add('selected');
+            } else if (!estaSeleccionado && tieneClaseSelected) {
+                card.classList.remove('selected');
+            }
+        });
+        
+        // Actualizar otros elementos visuales
+        if (estaSeleccionado) {
+            if (badge) badge.style.display = 'flex';
+            if (stateNormal) stateNormal.style.display = 'none';
+            if (stateSelected) stateSelected.style.display = 'flex';
+        } else {
+            if (badge) badge.style.display = 'none';
+            if (stateNormal) stateNormal.style.display = 'flex';
+            if (stateSelected) stateSelected.style.display = 'none';
+        }
+    });
+    
+    console.log(`📊 SINCRONIZACIÓN COMPLETADA: ${procesados.size} productos procesados`);
+    
+    // Actualizar contador
+    window.updateSelectedCount();
+};
 </script>
 {% endblock %}
