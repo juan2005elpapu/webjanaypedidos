@@ -617,10 +617,63 @@ window.clearSelection = function() {
 
 window.applySelection = function() {
     if (selectedProducts.size === 0) {
-        alert('Debes seleccionar al menos un producto');
+        // Mostrar mensaje más prominente
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50';
+        alertDiv.innerHTML = `
+            <div class="flex items-center">
+                <span class="material-icons mr-2">warning</span>
+                <span>Debes seleccionar al menos un producto</span>
+            </div>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Remover después de 3 segundos
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 3000);
+        
         return;
     }
     
+    // Validar pedido mínimo
+    let subtotal = 0;
+    selectedProducts.forEach(productId => {
+        const product = products[productId];
+        const qtyInput = document.getElementById(`qty-${productId}`);
+        const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+        if (product) {
+            subtotal += product.price * quantity;
+        }
+    });
+    
+    if (subtotal < settings.minimumOrder) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded z-50 max-w-md';
+        alertDiv.innerHTML = `
+            <div class="flex items-center">
+                <span class="material-icons mr-2">info</span>
+                <div>
+                    <div class="font-semibold">Pedido mínimo no alcanzado</div>
+                    <div class="text-sm">
+                        Pedido mínimo: $${settings.minimumOrder.toLocaleString()}<br>
+                        Tu pedido: $${subtotal.toLocaleString()}<br>
+                        Faltan: $${(settings.minimumOrder - subtotal).toLocaleString()}
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(alertDiv);
+        
+        // Remover después de 5 segundos
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+        
+        return;
+    }
+    
+    // Si todo está bien, continuar con el proceso normal
     // Crear inputs hidden para enviar productos al backend
     const hiddenContainer = document.getElementById('hidden-inputs');
     hiddenContainer.innerHTML = ''; // Limpiar inputs anteriores

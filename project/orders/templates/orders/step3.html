@@ -176,14 +176,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Validación mínima -->
-            <div id="minimum-order-warning" class="order-invalid-message mt-4" style="display: none;">
-                <p class="order-invalid-text">
-                    <span class="material-icons text-sm align-middle mr-1">warning</span>
-                    El pedido mínimo es $<span id="minimum-amount">20,000</span>
-                </p>
-            </div>
         </div>
     </div>
 
@@ -293,19 +285,6 @@ document.addEventListener('DOMContentLoaded', function() {
             shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
         document.getElementById('final-total').textContent = `$${total.toLocaleString()}`;
 
-        // Validar pedido mínimo
-        const warning = document.getElementById('minimum-order-warning');
-        document.getElementById('minimum-amount').textContent = settings.minimumOrder.toLocaleString();
-        
-        if (subtotal < settings.minimumOrder) {
-            warning.style.display = 'block';
-            document.querySelector('button[type="submit"]').disabled = true;
-            document.querySelector('button[type="submit"]').classList.add('opacity-50', 'cursor-not-allowed');
-        } else {
-            warning.style.display = 'none';
-            document.querySelector('button[type="submit"]').disabled = false;
-            document.querySelector('button[type="submit"]').classList.remove('opacity-50', 'cursor-not-allowed');
-        }
     }
 
     function setupPaymentMethodChange() {

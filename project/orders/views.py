@@ -174,18 +174,40 @@ def order_step2(request):
                 except (ValueError, TypeError):
                     continue
         
-        if selected_products:
-            # CORREGIDO: Guardar en la estructura correcta de sesión
-            if 'order_cart' not in request.session:
-                request.session['order_cart'] = {}
-            
-            request.session['order_cart']['selected_products'] = selected_products
-            request.session.modified = True
-            
-            messages.success(request, f"Has seleccionado {len(selected_products)} productos.")
-            return redirect('orders:step3')
-        else:
-            messages.error(request, 'Debes seleccionar al menos un producto.')
+        # Validar que se hayan seleccionado productos
+        if not selected_products:
+            messages.error(request, 'Debes seleccionar al menos un producto para continuar.')
+            # Redirigir de vuelta al step2 para mostrar el mensaje
+            return redirect('orders:step2')
+        
+        # Calcular total para validar pedido mínimo
+        settings = BusinessSettings.get_settings()
+        total_amount = 0
+        for product_id, quantity in selected_products.items():
+            try:
+                product = Product.objects.get(id=product_id)
+                total_amount += product.price * quantity
+            except Product.DoesNotExist:
+                continue
+        
+        # Validar pedido mínimo
+        if total_amount < settings.minimum_order_amount:
+            messages.error(request, 
+                f'El pedido mínimo es ${settings.minimum_order_amount:,.0f}. '
+                f'Tu pedido actual es de ${total_amount:,.0f}. '
+                f'Agrega productos por ${settings.minimum_order_amount - total_amount:,.0f} más.'
+            )
+            return redirect('orders:step2')
+        
+        # Si todo está bien, guardar y continuar
+        if 'order_cart' not in request.session:
+            request.session['order_cart'] = {}
+        
+        request.session['order_cart']['selected_products'] = selected_products
+        request.session.modified = True
+        
+        messages.success(request, f"Has seleccionado {len(selected_products)} productos correctamente.")
+        return redirect('orders:step3')
     
     # GET request - mostrar formulario
     # Obtener productos y categorías
@@ -241,6 +263,11 @@ def order_step3(request):
     
     order_info = cart_data.get('order_info', {})
     selected_products = cart_data.get('selected_products', {})
+    
+    # Verificación adicional de seguridad (no debería ser necesaria)
+    if not selected_products:
+        messages.error(request, "No hay productos seleccionados.")
+        return redirect('orders:step2')
     
     if request.method == 'POST':
         # Crear el pedido final
