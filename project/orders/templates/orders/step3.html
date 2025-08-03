@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     validateMinimumOrder();
 
     function loadOrderSummary() {
-        // Obtener datos de la sesión (deberías pasarlos desde el backend)
+        // Obtener datos de la sesión (pasados desde el backend)
         const orderInfo = {
             delivery_type: '{{ order_info.delivery_type|default:"pickup" }}',
             customer_name: '{{ order_info.customer_name|escapejs }}',
@@ -227,8 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
         displayProducts(selectedProducts);
         calculateFinalTotals(selectedProducts, settings);
 
-        // Mostrar notas si existen
-        const notes = sessionStorage.getItem('order_notes');
+        // Mostrar notas si existen - CORREGIDO para usar datos del backend
+        const notes = '{{ order_notes|escapejs }}';
         if (notes && notes.trim()) {
             document.getElementById('notes-section').style.display = 'block';
             document.getElementById('order-notes-display').textContent = notes;
@@ -248,13 +248,14 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const [productId, quantity] of Object.entries(selectedProducts)) {
             const product = {{ products_data|safe }}[productId];
             if (product) {
-                const subtotal = product.price * quantity;
+                const quantityInt = parseInt(quantity); // ASEGURAR QUE QUANTITY SEA ENTERO
+                const subtotal = product.price * quantityInt;
                 html += `
                     <div class="selected-product-item">
                         <div class="selected-product-info">
                             <h4 class="selected-product-name">${product.name}</h4>
                             <div class="text-xs text-gray-500">
-                                ${quantity} × $${parseInt(product.price).toLocaleString()}
+                                ${quantityInt} × $${parseInt(product.price).toLocaleString()}
                             </div>
                         </div>
                         <div class="selected-product-price">
@@ -273,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const [productId, quantity] of Object.entries(selectedProducts)) {
             const product = {{ products_data|safe }}[productId];
             if (product) {
-                subtotal += product.price * quantity;
+                subtotal += product.price * parseInt(quantity); // ASEGURAR QUE QUANTITY SEA ENTERO
             }
         }
 
@@ -304,22 +305,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function createHiddenInputs(orderInfo, selectedProducts, notes) {
         const container = document.getElementById('final-order-data');
+        container.innerHTML = ''; // Limpiar inputs anteriores
         
         // Información básica
         for (const [key, value] of Object.entries(orderInfo)) {
             if (value) {
-                container.innerHTML += `<input type="hidden" name="${key}" value="${value}">`;
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = key;
+                input.value = value;
+                container.appendChild(input);
             }
         }
 
-        // Productos
+        // Productos CON CANTIDADES CORRECTAS
         for (const [productId, quantity] of Object.entries(selectedProducts)) {
-            container.innerHTML += `<input type="hidden" name="product_${productId}" value="${quantity}">`;
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = `product_${productId}`;
+            input.value = parseInt(quantity); // ASEGURAR QUE SEA ENTERO
+            container.appendChild(input);
         }
 
         // Notas
-        if (notes) {
-            container.innerHTML += `<input type="hidden" name="order_notes" value="${notes}">`;
+        if (notes && notes.trim()) {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'order_notes';
+            input.value = notes;
+            container.appendChild(input);
         }
     }
 

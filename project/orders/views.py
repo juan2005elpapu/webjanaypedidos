@@ -163,6 +163,7 @@ def order_step2(request):
     if request.method == 'POST':
         # Procesar selección de productos
         selected_products = {}
+        order_notes = request.POST.get('order_notes', '')
         
         for key, value in request.POST.items():
             if key.startswith('product_'):
@@ -177,7 +178,6 @@ def order_step2(request):
         # Validar que se hayan seleccionado productos
         if not selected_products:
             messages.error(request, 'Debes seleccionar al menos un producto para continuar.')
-            # Redirigir de vuelta al step2 para mostrar el mensaje
             return redirect('orders:step2')
         
         # Calcular total para validar pedido mínimo
@@ -204,6 +204,11 @@ def order_step2(request):
             request.session['order_cart'] = {}
         
         request.session['order_cart']['selected_products'] = selected_products
+        
+        # Guardar las notas del pedido también
+        if order_notes.strip():
+            request.session['order_cart']['order_notes'] = order_notes.strip()
+        
         request.session.modified = True
         
         messages.success(request, f"Has seleccionado {len(selected_products)} productos correctamente.")
@@ -263,8 +268,9 @@ def order_step3(request):
     
     order_info = cart_data.get('order_info', {})
     selected_products = cart_data.get('selected_products', {})
+    order_notes = cart_data.get('order_notes', '')
     
-    # Verificación adicional de seguridad (no debería ser necesaria)
+    # Verificación adicional de seguridad
     if not selected_products:
         messages.error(request, "No hay productos seleccionados.")
         return redirect('orders:step2')
@@ -272,7 +278,7 @@ def order_step3(request):
     if request.method == 'POST':
         # Crear el pedido final
         payment_method = request.POST.get('payment_method', 'cash')
-        order_notes = request.POST.get('order_notes', '')
+        final_order_notes = request.POST.get('order_notes', order_notes)
         
         try:
             # Crear el pedido
@@ -288,15 +294,15 @@ def order_step3(request):
                 delivery_neighborhood=order_info.get('delivery_neighborhood', ''),
                 delivery_references=order_info.get('delivery_references', ''),
                 payment_method=payment_method,
-                special_instructions=order_notes,
+                special_instructions=final_order_notes,
                 status='pending'
             )
             
-            # Crear los items del pedido
+            # Crear los items del pedido CON LAS CANTIDADES CORRECTAS
             total_amount = 0
             for product_id, quantity in selected_products.items():
                 product = get_object_or_404(Product, id=product_id)
-                quantity = int(quantity)
+                quantity = int(quantity)  # Asegurar que sea entero
                 
                 OrderItem.objects.create(
                     order=order,
@@ -351,6 +357,7 @@ def order_step3(request):
         'order_info': order_info,
         'selected_products': json.dumps(selected_products),
         'products_data': json.dumps(products_data),
+        'order_notes': order_notes,  # Agregar las notas al contexto
         'settings': BusinessSettings.get_settings(),
         
         # Datos para el template base de steps

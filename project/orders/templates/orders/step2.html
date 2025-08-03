@@ -615,6 +615,37 @@ window.clearSelection = function() {
     window.updateSelectedCount();
 };
 
+// NUEVA FUNCIÓN PARA ACTUALIZAR INPUTS HIDDEN
+window.updateHiddenInputs = function() {
+    const hiddenContainer = document.getElementById('hidden-inputs');
+    if (!hiddenContainer) return;
+    
+    // Limpiar inputs anteriores
+    hiddenContainer.innerHTML = '';
+    
+    // Crear inputs para productos con cantidades actuales
+    selectedProducts.forEach(productId => {
+        const qtyInput = document.getElementById(`qty-${productId}`);
+        const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
+        
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = `product_${productId}`;
+        input.value = quantity;
+        hiddenContainer.appendChild(input);
+    });
+    
+    // Agregar notas del pedido si existen
+    const notesTextarea = document.getElementById('order-notes');
+    if (notesTextarea && notesTextarea.value.trim()) {
+        const notesInput = document.createElement('input');
+        notesInput.type = 'hidden';
+        notesInput.name = 'order_notes';
+        notesInput.value = notesTextarea.value.trim();
+        hiddenContainer.appendChild(notesInput);
+    }
+};
+
 window.applySelection = function() {
     if (selectedProducts.size === 0) {
         // Mostrar mensaje más prominente
@@ -673,38 +704,12 @@ window.applySelection = function() {
         return;
     }
     
-    // Si todo está bien, continuar con el proceso normal
-    // Crear inputs hidden para enviar productos al backend
-    const hiddenContainer = document.getElementById('hidden-inputs');
-    hiddenContainer.innerHTML = ''; // Limpiar inputs anteriores
-    
-    selectedProducts.forEach(productId => {
-        const qtyInput = document.getElementById(`qty-${productId}`);
-        const quantity = qtyInput ? parseInt(qtyInput.value) || 1 : 1;
-        
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = `product_${productId}`;
-        input.value = quantity;
-        hiddenContainer.appendChild(input);
-    });
-    
-    // Agregar notas del pedido si existen
-    const notesTextarea = document.getElementById('order-notes');
-    if (notesTextarea && notesTextarea.value.trim()) {
-        const notesInput = document.createElement('input');
-        notesInput.type = 'hidden';
-        notesInput.name = 'order_notes';
-        notesInput.value = notesTextarea.value.trim();
-        hiddenContainer.appendChild(notesInput);
-    }
+    // CREAR INPUTS HIDDEN INICIALES AL CERRAR EL MODAL
+    window.updateHiddenInputs();
     
     // MANTENER las funciones originales
     window.updateMainProductsSection();
     window.closeModal();
-    
-    // NUEVO: Preparar para envío cuando se haga click en "Continuar a pago"
-    // (El botón submit enviará automáticamente los inputs hidden)
 };
 
 window.updateMainProductsSection = function() {
@@ -870,6 +875,9 @@ window.onQuantityChange = function(productId, quantity) {
         }
     }
     
+    // ACTUALIZAR INPUTS HIDDEN CADA VEZ QUE CAMBIE UNA CANTIDAD
+    window.updateHiddenInputs();
+    
     window.calculateTotal();
 };
 
@@ -1008,6 +1016,15 @@ document.addEventListener('DOMContentLoaded', function() {
     window.setupSearch();
     window.setupCategoryFilters();
     window.ImageLoader.init();
+    
+    // Agregar listener para actualizar inputs cuando cambien las notas
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'order-notes') {
+            setTimeout(() => {
+                window.updateHiddenInputs();
+            }, 100); // Pequeño delay para asegurar que el valor se haya actualizado
+        }
+    });
 });
 </script>
 {% endblock %}
