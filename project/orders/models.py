@@ -30,9 +30,7 @@ class Order(models.Model):
     
     PAYMENT_STATUS = [
         ('pending', 'Pendiente'),
-        ('paid_online', 'Pagado en línea'),
-        ('pay_on_delivery', 'Pagar al entregar'),
-        ('pay_later', 'Pagar después'),
+        ('confirmed', 'Confirmado'),
         ('cancelled', 'Cancelado'),
     ]
     
@@ -78,7 +76,6 @@ class Order(models.Model):
     # Información de pago
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='pending', verbose_name='Estado del pago')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD, blank=True, verbose_name='Método de pago')
-    can_pay_later = models.BooleanField(default=False, verbose_name='Puede pagar después')
     
     # Notas y comentarios
     notes = models.TextField(blank=True, verbose_name='Notas del cliente')
@@ -228,15 +225,6 @@ class OrderItem(models.Model):
     unit_price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Precio unitario')
     total_price = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Total')
     
-    # Personalización del producto
-    special_instructions = models.TextField(blank=True, verbose_name='Instrucciones especiales')
-    customizations = models.JSONField(
-        default=dict, 
-        blank=True, 
-        verbose_name='Personalizaciones',
-        help_text='Ej: {"sabor": "chocolate", "azucar": "sin azucar", "decoracion": "feliz cumpleanos"}'
-    )
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -256,8 +244,8 @@ class OrderItem(models.Model):
     
     @property
     def has_customizations(self):
-        """Verifica si tiene personalizaciones"""
-        return bool(self.customizations or self.special_instructions)
+        """Verifica si tiene instrucciones especiales"""
+        return bool(self.special_instructions)
 
 
 class OrderModificationRequest(models.Model):
