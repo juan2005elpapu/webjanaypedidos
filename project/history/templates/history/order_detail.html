@@ -160,21 +160,29 @@
                 <dl class="space-y-3">
                     <div class="flex justify-between">
                         <dt class="text-sm text-gray-600">Subtotal</dt>
-                        <dd class="text-sm font-medium text-gray-900">${{ order.subtotal|floatformat:0|intcomma }}</dd>
+                        <dd class="text-sm font-medium text-gray-900">${{ order.calculated_subtotal|floatformat:0|intcomma }}</dd>
                     </div>
                     {% if order.delivery_type == 'delivery' %}
                         <div class="flex justify-between">
                             <dt class="text-sm text-gray-600">Envío</dt>
                             <dd class="text-sm font-medium">
-                                {% if order.qualifies_for_free_delivery %}
+                                {% if order.qualifies_for_free_shipping %}
                                     <span class="text-green-600 font-semibold">¡Gratis!</span>
                                     <div class="text-xs text-gray-500">
                                         (Envío gratis desde ${{ settings.free_delivery_threshold|floatformat:0|intcomma }})
                                     </div>
                                 {% else %}
-                                    <span class="text-gray-900">${{ order.delivery_fee|floatformat:0|intcomma }}</span>
+                                    <span class="text-gray-900">${{ order.calculated_shipping|floatformat:0|intcomma }}</span>
                                     <div class="text-xs text-gray-500">
-                                        Faltan ${{ settings.free_delivery_threshold|add:order.subtotal|add:"-"|add:order.subtotal|floatformat:0|intcomma }} para envío gratis
+                                        <!-- Calcular directamente usando JavaScript -->
+                                        <span id="remaining-amount"></span> para envío gratis
+                                        <script>
+                                            // Calcular la diferencia
+                                            const threshold = {{ settings.free_delivery_threshold|floatformat:0 }};
+                                            const subtotal = {{ order.calculated_subtotal|floatformat:0 }};
+                                            const remaining = threshold - subtotal;
+                                            document.getElementById('remaining-amount').textContent = `Faltan $${remaining.toLocaleString()}`;
+                                        </script>
                                     </div>
                                 {% endif %}
                             </dd>
@@ -182,7 +190,7 @@
                     {% endif %}
                     <div class="border-t border-gray-200 pt-3 flex justify-between">
                         <dt class="text-base font-medium text-gray-900">Total</dt>
-                        <dd class="text-base font-medium text-gray-900">${{ order.total|floatformat:0|intcomma }}</dd>
+                        <dd class="text-base font-medium text-gray-900">${{ order.calculated_total|floatformat:0|intcomma }}</dd>
                     </div>
                 </dl>
                 
