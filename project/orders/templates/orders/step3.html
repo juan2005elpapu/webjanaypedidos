@@ -274,18 +274,36 @@ document.addEventListener('DOMContentLoaded', function() {
         for (const [productId, quantity] of Object.entries(selectedProducts)) {
             const product = {{ products_data|safe }}[productId];
             if (product) {
-                subtotal += product.price * parseInt(quantity); // ASEGURAR QUE QUANTITY SEA ENTERO
+                subtotal += product.price * parseInt(quantity);
             }
         }
 
-        const shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+        // OBTENER TIPO DE ENTREGA DESDE LOS DATOS DEL BACKEND
+        const deliveryType = '{{ order_info.delivery_type|default:"pickup" }}';
+        
+        // CALCULAR ENVÍO BASADO EN EL TIPO DE ENTREGA
+        let shipping = 0;
+        if (deliveryType === 'delivery') {
+            shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+        } else {
+            shipping = 0; // Sin costo de envío para pickup
+        }
+        
         const total = subtotal + shipping;
 
         document.getElementById('final-subtotal').textContent = `$${subtotal.toLocaleString()}`;
-        document.getElementById('final-shipping').textContent = 
-            shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
+        
+        // ACTUALIZAR TEXTO DE ENVÍO SEGUN EL TIPO DE ENTREGA
+        const shippingElement = document.getElementById('final-shipping');
+        if (deliveryType === 'pickup') {
+            shippingElement.textContent = 'No aplica';
+            shippingElement.className = 'text-gray-500';
+        } else {
+            shippingElement.textContent = shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
+            shippingElement.className = shipping === 0 ? 'text-green-600' : '';
+        }
+        
         document.getElementById('final-total').textContent = `$${total.toLocaleString()}`;
-
     }
 
     function setupPaymentMethodChange() {

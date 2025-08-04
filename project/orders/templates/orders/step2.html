@@ -925,7 +925,26 @@ window.calculateTotal = function() {
         }
     });
     
-    const shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+    // OBTENER TIPO DE ENTREGA DESDE LA SESIÓN/LOCALSTORAGE O DESDE EL STEP 1
+    let deliveryType = 'pickup'; // Por defecto pickup
+    
+    // Intentar obtener el tipo de entrega desde sessionStorage si existe
+    try {
+        const orderInfo = JSON.parse(sessionStorage.getItem('order_info') || '{}');
+        deliveryType = orderInfo.delivery_type || 'pickup';
+    } catch (e) {
+        // Si no hay datos en sessionStorage, asumir pickup
+        deliveryType = 'pickup';
+    }
+    
+    // CALCULAR ENVÍO BASADO EN EL TIPO DE ENTREGA
+    let shipping = 0;
+    if (deliveryType === 'delivery') {
+        shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+    } else {
+        shipping = 0; // Sin costo de envío para pickup
+    }
+    
     const total = subtotal + shipping;
     
     const subtotalElement = document.getElementById('subtotal-amount');
@@ -935,7 +954,15 @@ window.calculateTotal = function() {
     const deliveryInfo = document.getElementById('delivery-info');
     
     if (subtotalElement) subtotalElement.textContent = `$${subtotal.toLocaleString()}`;
-    if (shippingElement) shippingElement.textContent = shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
+    if (shippingElement) {
+        if (deliveryType === 'pickup') {
+            shippingElement.textContent = 'No aplica';
+            shippingElement.className = 'text-gray-500';
+        } else {
+            shippingElement.textContent = shipping === 0 ? 'Gratis' : `$${shipping.toLocaleString()}`;
+            shippingElement.className = shipping === 0 ? 'text-green-600' : '';
+        }
+    }
     if (finalElement) finalElement.textContent = `$${total.toLocaleString()}`;
     if (totalElement) totalElement.textContent = `$${total.toLocaleString()}`;
     
@@ -1012,7 +1039,7 @@ window.updateEmptyMessage = function(visibleCount) {
     }
 };
 
-// EVENT LISTENERS
+// ACTUALIZAR LOS EVENT LISTENERS
 document.addEventListener('DOMContentLoaded', function() {
     const addProductsBtn = document.getElementById('add-products-btn');
     if (addProductsBtn) {
@@ -1059,6 +1086,17 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 window.updateHiddenInputs();
             }, 100); // Pequeño delay para asegurar que el valor se haya actualizado
+        }
+    });
+    
+    // LLAMAR A updateDeliveryInfo AL CARGAR LA PÁGINA
+    window.updateDeliveryInfo();
+    
+    // ESCUCHAR CAMBIOS EN EL STORAGE PARA ACTUALIZAR INFO DE ENTREGA
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'order_info') {
+            window.updateDeliveryInfo();
+            window.calculateTotal(); // Recalcular total con el nuevo tipo de entrega
         }
     });
     

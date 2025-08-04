@@ -187,12 +187,15 @@
 {% block step_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Referencias a elementos
     const deliveryRadios = document.querySelectorAll('input[name="delivery_type"]');
     const deliveryInfo = document.getElementById('delivery-info');
     const deliveryAddress = document.getElementById('delivery_address');
+    const form = document.getElementById('step-form');
 
+    // Función para mostrar/ocultar información de delivery
     function toggleDeliveryInfo() {
-        const selectedValue = document.querySelector('input[name="delivery_type"]:checked').value;
+        const selectedValue = document.querySelector('input[name="delivery_type"]:checked')?.value;
         
         if (selectedValue === 'delivery') {
             deliveryInfo.classList.remove('hidden');
@@ -201,14 +204,56 @@ document.addEventListener('DOMContentLoaded', function() {
             deliveryInfo.classList.add('hidden');
             deliveryAddress.removeAttribute('required');
         }
+        
+        // Actualizar sessionStorage para otros steps
+        updateSessionStorage();
     }
 
+    // Función para actualizar sessionStorage
+    function updateSessionStorage() {
+        try {
+            const selectedValue = document.querySelector('input[name="delivery_type"]:checked')?.value;
+            const currentInfo = JSON.parse(sessionStorage.getItem('order_info') || '{}');
+            currentInfo.delivery_type = selectedValue;
+            sessionStorage.setItem('order_info', JSON.stringify(currentInfo));
+            
+            // Disparar evento para que otros componentes se actualicen
+            window.dispatchEvent(new StorageEvent('storage', {
+                key: 'order_info',
+                newValue: JSON.stringify(currentInfo)
+            }));
+        } catch (e) {
+            console.log('Error actualizando sessionStorage:', e);
+        }
+    }
+
+    // Event listeners para los radio buttons
     deliveryRadios.forEach(radio => {
         radio.addEventListener('change', toggleDeliveryInfo);
     });
 
     // Ejecutar al cargar la página
     toggleDeliveryInfo();
+
+    // GUARDAR INFORMACIÓN EN SESSIONSTORAGE AL ENVIAR EL FORMULARIO
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            // Recopilar datos del formulario
+            const formData = new FormData(form);
+            const orderInfo = {};
+            
+            for (let [key, value] of formData.entries()) {
+                orderInfo[key] = value;
+            }
+            
+            // Guardar en sessionStorage para uso en step2 y step3
+            try {
+                sessionStorage.setItem('order_info', JSON.stringify(orderInfo));
+            } catch (e) {
+                console.log('No se pudo guardar en sessionStorage:', e);
+            }
+        });
+    }
 });
 </script>
 {% endblock %}
