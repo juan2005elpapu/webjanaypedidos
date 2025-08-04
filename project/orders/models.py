@@ -5,6 +5,10 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from decimal import Decimal
 import json
+import random
+import string
+from datetime import datetime
+        
 
 class Order(models.Model):
     ORDER_STATUS = [
@@ -92,22 +96,19 @@ class Order(models.Model):
     
     def generate_order_number(self):
         """Genera un número único para el pedido"""
-        from django.utils import timezone
-        today = timezone.now()
-        prefix = f"JY{today.strftime('%y%m%d')}"
+
+        # Formato: JY + YYYYMMDD + NNNN (4 dígitos aleatorios)
+        date_part = datetime.now().strftime('%Y%m%d')  # 8 dígitos: 20250804
+        random_part = ''.join(random.choices(string.digits, k=4))  # 4 dígitos
         
-        # Buscar el último pedido del día
-        last_order = Order.objects.filter(
-            order_number__startswith=prefix
-        ).order_by('-order_number').first()
+        order_number = f"JY{date_part}{random_part}"  # JY20250804NNNN = 14 dígitos
         
-        if last_order:
-            last_number = int(last_order.order_number[-3:])
-            new_number = f"{prefix}{(last_number + 1):03d}"
-        else:
-            new_number = f"{prefix}001"
+        # Verificar si ya existe
+        while Order.objects.filter(order_number=order_number).exists():
+            random_part = ''.join(random.choices(string.digits, k=4))
+            order_number = f"JY{date_part}{random_part}"
         
-        return new_number
+        return order_number
     
     def __str__(self):
         return f"{self.order_number} - {self.customer_name} ({self.get_status_display()})"
