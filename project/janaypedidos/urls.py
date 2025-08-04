@@ -34,6 +34,7 @@ urlpatterns = [
     # Páginas principales
     path('', WelcomeView.as_view(), name='welcome'),
     path('dashboard/', include('core.urls')),
+    path('history/', include('history.urls')),
 ]
 
 if settings.DEBUG:

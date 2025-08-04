@@ -19,7 +19,4 @@ urlpatterns = [
     path('cart/update/', views.update_cart, name='update_cart'),
     path('cart/clear/', views.clear_cart, name='clear_cart'),
     
-    # Ver pedidos
-    path('history/', views.order_history, name='history'),
-    path('detail/<int:order_id>/', views.order_detail, name='detail'),
 ]

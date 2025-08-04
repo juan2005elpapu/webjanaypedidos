@@ -381,29 +381,6 @@ def order_step3(request):
     
     return render(request, 'orders/step3.html', context)
 
-@login_required
-def order_history(request):
-    """Vista del historial de pedidos del usuario"""
-    orders = Order.objects.filter(user=request.user).exclude(status='draft')
-    
-    context = {
-        'orders': orders,
-        'title': 'Historial de Pedidos'
-    }
-    
-    return render(request, 'orders/history.html', context)
-
-@login_required
-def order_detail(request, order_id):
-    """Vista de detalle de un pedido específico"""
-    order = get_object_or_404(Order, id=order_id, user=request.user)
-    
-    context = {
-        'order': order,
-        'title': f'Pedido {order.order_number}'
-    }
-    
-    return render(request, 'orders/detail.html', context)
 
 # Añadir esta nueva función después de order_detail
 @login_required
