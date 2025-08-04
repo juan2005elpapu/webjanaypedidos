@@ -760,7 +760,11 @@
   }
 
   .pagination-current {
-    @apply bg-orange-500 border-orange-500 text-white hover:bg-orange-600 hover:border-orange-600;
+    @apply bg-orange-600 border-orange-600 text-white font-semibold shadow-sm;
+  }
+  
+  .pagination-current:hover {
+    @apply bg-orange-700 border-orange-700;
   }
 
   .pagination-ellipsis {
@@ -1100,6 +1104,40 @@
       @apply py-12 px-8 min-h-screen flex items-center;
     }
   }
+  /* AGREGAR ESTOS ESTILOS EN LA SECCIÓN DE PAGINATION EXISTENTE */
+  
+  /* Puntos suspensivos del paginador */
+  .pagination-dots {
+    @apply inline-flex items-center justify-center px-3 py-2 text-sm font-medium text-gray-500 cursor-default;
+  }
+
+  /* Responsive mejorado para móviles */
+  @media (max-width: 639px) {
+    .pagination-container {
+      @apply flex-col gap-3;
+    }
+    
+    .pagination-btn {
+      @apply px-3 py-2 text-sm;
+    }
+    
+    .pagination-numbers {
+      @apply gap-1;
+    }
+    
+    .pagination-number {
+      @apply min-w-10 h-10 text-sm px-3 py-2;
+    }
+    
+    .pagination-info {
+      @apply text-center text-sm;
+    }
+    
+    /* Solo íconos en botones anterior/siguiente para móvil */
+    .pagination-text {
+      @apply hidden;
+    }
+  }
 }
 
 /* SCROLLBAR PARA CONTENEDOR DE PRODUCTOS SELECCIONADOS (fuera de @layer por especificidad) */
@@ -1131,3 +1169,5 @@ input[type="password"]::-ms-reveal,
 input[type="password"]::-ms-clear {
   filter: invert(100%) brightness(100%);
 }
+
+

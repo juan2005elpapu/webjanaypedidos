@@ -130,7 +130,7 @@
         <div class="pagination">
             <button type="button" id="prev-page" class="pagination-btn pagination-prev pagination-disabled" disabled>
                 <span class="material-icons text-sm">chevron_left</span>
-                Anterior
+                <span class="pagination-text">Anterior</span>
             </button>
             
             <div class="pagination-numbers" id="pagination-numbers">
@@ -138,7 +138,7 @@
             </div>
             
             <button type="button" id="next-page" class="pagination-btn pagination-next">
-                Siguiente
+                <span class="pagination-text">Siguiente</span>
                 <span class="material-icons text-sm">chevron_right</span>
             </button>
         </div>
@@ -189,7 +189,7 @@ class ProductFilter {
         this.allProducts = Array.from(document.querySelectorAll('.product-card'));
         this.filteredProducts = [...this.allProducts];
         this.currentPage = 1;
-        this.itemsPerPage = 3;
+        this.itemsPerPage = 12;
         this.totalPages = 0;
         this.loadedImages = new Set();
         
@@ -425,24 +425,87 @@ class ProductFilter {
         this.updatePageNumbers();
     }
     
-    // CORREGIR NÚMEROS DE PÁGINA CON ESTILOS
+    // CORREGIR NÚMEROS DE PÁGINA CON LÓGICA INTELIGENTE
     updatePageNumbers() {
         const numbersContainer = document.getElementById('pagination-numbers');
         if (!numbersContainer || this.totalPages <= 1) return;
         
         numbersContainer.innerHTML = '';
         
-        for (let i = 1; i <= this.totalPages; i++) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.textContent = i;
-            // AGREGAR LAS CLASES CORRECTAS
-            button.className = `pagination-btn pagination-number ${
-                i === this.currentPage ? 'pagination-current' : ''
-            }`;
-            button.addEventListener('click', () => this.goToPage(i));
+        // Determinar qué páginas mostrar
+        const maxVisiblePages = window.innerWidth < 640 ? 2 : 5; // 3 en móvil, 5 en desktop
+        let startPage, endPage;
+        
+        if (this.totalPages <= maxVisiblePages) {
+            // Mostrar todas las páginas si son pocas
+            startPage = 1;
+            endPage = this.totalPages;
+        } else {
+            // Lógica para páginas limitadas
+            const halfVisible = Math.floor(maxVisiblePages / 2);
+            
+            if (this.currentPage <= halfVisible + 1) {
+                // Cerca del inicio
+                startPage = 1;
+                endPage = maxVisiblePages;
+            } else if (this.currentPage >= this.totalPages - halfVisible) {
+                // Cerca del final
+                startPage = this.totalPages - maxVisiblePages + 1;
+                endPage = this.totalPages;
+            } else {
+                // En el medio
+                startPage = this.currentPage - halfVisible;
+                endPage = this.currentPage + halfVisible;
+            }
+        }
+        
+        // Botón primera página (si no está visible)
+        if (startPage > 1) {
+            const firstButton = this.createPageButton(1, false);
+            numbersContainer.appendChild(firstButton);
+            
+            // Puntos suspensivos si hay gap
+            if (startPage > 2) {
+                const dots = this.createDotsElement();
+                numbersContainer.appendChild(dots);
+            }
+        }
+        
+        // Páginas visibles
+        for (let i = startPage; i <= endPage; i++) {
+            const button = this.createPageButton(i, i === this.currentPage);
             numbersContainer.appendChild(button);
         }
+        
+        // Botón última página (si no está visible)
+        if (endPage < this.totalPages) {
+            // Puntos suspensivos si hay gap
+            if (endPage < this.totalPages - 1) {
+                const dots = this.createDotsElement();
+                numbersContainer.appendChild(dots);
+            }
+            
+            const lastButton = this.createPageButton(this.totalPages, false);
+            numbersContainer.appendChild(lastButton);
+        }
+    }
+    
+    createPageButton(pageNumber, isCurrent) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = pageNumber;
+        button.className = `pagination-btn pagination-number ${
+            isCurrent ? 'pagination-current' : ''
+        }`;
+        button.addEventListener('click', () => this.goToPage(pageNumber));
+        return button;
+    }
+    
+    createDotsElement() {
+        const dots = document.createElement('span');
+        dots.className = 'pagination-dots';
+        dots.textContent = '...';
+        return dots;
     }
     
     updateResultsInfo() {
