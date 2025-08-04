@@ -987,7 +987,120 @@
     }
   }
 
-} /* Cierre de @layer components */
+  /* SUCCESS PAGE STYLES */
+  .success-page-container {
+    @apply py-4 px-4 sm:py-6 sm:px-6 md:py-8 md:px-8 lg:py-12 lg:px-8 xl:py-16 max-w-4xl mx-auto min-h-screen flex items-center;
+  }
+
+  .success-container {
+    @apply text-center p-6 md:p-10 w-full;
+  }
+
+  .success-icon {
+    @apply bg-green-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6;
+  }
+
+  .success-icon .material-icons {
+    @apply text-green-600 text-5xl;
+  }
+
+  .success-title {
+    @apply text-2xl md:text-3xl font-bold text-gray-800 mb-4;
+  }
+
+  .success-description {
+    @apply text-lg text-gray-600 mb-6;
+  }
+
+  .order-info-card {
+    @apply bg-blue-50 p-4 rounded-md text-blue-800 mb-8 inline-block;
+  }
+
+  .order-number {
+    @apply font-medium mb-1;
+  }
+
+  .order-date {
+    @apply text-sm;
+  }
+
+  .success-message {
+    @apply text-gray-600 mb-8;
+  }
+
+  .success-actions {
+    @apply flex flex-col md:flex-row justify-center gap-4;
+  }
+
+  /* Botones específicos para página de éxito */
+  .btn-success-primary {
+    @apply inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg text-white bg-orange-600 hover:bg-orange-700 transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500;
+  }
+
+  .btn-success-primary .material-icons {
+    @apply mr-2 text-xl;
+  }
+
+  .btn-success-secondary {
+    @apply inline-flex items-center justify-center px-6 py-3 text-base font-medium rounded-lg text-orange-700 bg-orange-100 hover:bg-orange-200 border border-orange-300 hover:border-orange-400 transition-all duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500;
+  }
+
+  .btn-success-secondary .material-icons {
+    @apply mr-2 text-xl;
+  }
+
+  /* Responsive adjustments for success page */
+  @media (max-width: 640px) {
+    .success-page-container {
+      @apply py-4 px-4 min-h-screen flex items-start pt-8;
+    }
+
+    .success-container {
+      @apply p-4;
+    }
+
+    .success-title {
+      @apply text-xl;
+    }
+
+    .success-description {
+      @apply text-base;
+    }
+
+    .success-actions {
+      @apply flex-col space-y-3;
+    }
+
+    .btn-success-primary,
+    .btn-success-secondary {
+      @apply w-full justify-center;
+    }
+  }
+  /* Animación del skeleton */
+    @keyframes skeleton-shimmer {
+      0% {
+        background-position: -200px 0;
+      }
+      100% {
+        background-position: calc(200px + 100%) 0;
+      }
+    }
+
+
+  /* Para tablets */
+  @media (min-width: 641px) and (max-width: 1024px) {
+    .success-page-container {
+      @apply py-8 px-6 min-h-screen flex items-center;
+    }
+  }
+
+  /* Para laptops y desktop */
+  @media (min-width: 1025px) {
+    .success-page-container {
+      @apply py-12 px-8 min-h-screen flex items-center;
+    }
+  }
+}
 
 /* SCROLLBAR PARA CONTENEDOR DE PRODUCTOS SELECCIONADOS (fuera de @layer por especificidad) */
 .products-selected-container::-webkit-scrollbar {
@@ -1012,15 +1125,6 @@
   scrollbar-color: #fdba74 #fef3e2; /* orange-300 orange-50 */
 }
 
-/* Animación del skeleton */
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: -200px 0;
-  }
-  100% {
-    background-position: calc(200px + 100%) 0;
-  }
-}
 
 /* Estilos para contraseñas (fuera de layer por especificidad) */
 input[type="password"]::-ms-reveal,

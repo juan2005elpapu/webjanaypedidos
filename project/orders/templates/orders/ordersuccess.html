@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pedido Confirmado{% endblock %}
+
+{% block content %}
+<div class="success-page-container">
+    <div class="content-card">
+        <div class="success-container">
+            <div class="success-icon">
+                <span class="material-icons">check_circle</span>
+            </div>
+            
+            <h1 class="success-title">¡Gracias por tu pedido!</h1>
+            
+            <p class="success-description">
+                Tu pedido ha sido recibido y está siendo procesado.
+            </p>
+            
+            <div class="order-info-card">
+                <p class="order-number">Pedido #{{ order.order_number }}</p>
+                <p class="order-date">Fecha: {{ order.created_at|date:"d/m/Y H:i" }}</p>
+            </div>
+            
+            <div class="success-message">
+                <p>Para hacer cambios en tu pedido o verificar su estado, puedes visitar la sección de historial de pedidos.</p>
+            </div>
+            
+            <div class="success-actions">
+                <a href="{% url 'orders:history' %}" class="btn-success-primary">
+                    <span class="material-icons">history</span>
+                    <span>Ver Historial de Pedidos</span>
+                </a>
+                <a href="{% url 'core:home' %}" class="btn-success-secondary">
+                    <span class="material-icons">home</span>
+                    <span>Volver al Inicio</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
