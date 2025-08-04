@@ -368,27 +368,25 @@ window.PaginationSystem = {
                 html += this.createPageNumber(i);
             }
         } else {
-            // Lógica más compleja para muchas páginas
-            if (currentPage <= 3) {
-                for (let i = 1; i <= 4; i++) {
+            // Lógica más compacta para muchas páginas
+            if (currentPage <= 1) {
+                // Mostrar primeras 3 páginas + puntos + última
+                for (let i = 1; i <= 2; i++) {
                     html += this.createPageNumber(i);
                 }
-                html += '<span class="pagination-ellipsis">...</span>';
-                html += this.createPageNumber(totalPages);
-            } else if (currentPage >= totalPages - 2) {
-                html += this.createPageNumber(1);
-                html += '<span class="pagination-ellipsis">...</span>';
-                for (let i = totalPages - 3; i <= totalPages; i++) {
+                html += '<span class="pagination-ellipsis">..</span>';
+            } else if (currentPage >= totalPages - 1) {
+                // Mostrar primera + puntos + últimas 3 páginas
+                html += '<span class="pagination-ellipsis">..</span>';
+                for (let i = totalPages - 2; i <= totalPages; i++) {
                     html += this.createPageNumber(i);
                 }
             } else {
-                html += this.createPageNumber(1);
-                html += '<span class="pagination-ellipsis">...</span>';
-                for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                    html += this.createPageNumber(i);
-                }
-                html += '<span class="pagination-ellipsis">...</span>';
-                html += this.createPageNumber(totalPages);
+                // Mostrar primera + puntos + página actual con vecinos + puntos + última
+                html += '<span class="pagination-ellipsis">..</span>';
+                html += this.createPageNumber(currentPage);
+                html += this.createPageNumber(currentPage + 1);
+                html += '<span class="pagination-ellipsis">..</span>';
             }
         }
 
@@ -1090,7 +1088,22 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // LLAMAR A updateDeliveryInfo AL CARGAR LA PÁGINA
-    window.updateDeliveryInfo();
+    window.updateDeliveryInfo = function() {
+    try {
+        const orderInfo = JSON.parse(sessionStorage.getItem('order_info') || '{}');
+        const deliveryType = orderInfo.delivery_type || 'pickup';
+        
+        // Puedes agregar aquí lógica adicional si necesitas mostrar 
+        // información específica sobre el tipo de entrega en la interfaz
+        
+        // Por ahora solo aseguramos que el total se recalcule con el tipo correcto
+        if (selectedProducts.size > 0) {
+            window.calculateTotal();
+        }
+    } catch (e) {
+        console.warn('Error al obtener información de entrega:', e);
+    }
+    };
     
     // ESCUCHAR CAMBIOS EN EL STORAGE PARA ACTUALIZAR INFO DE ENTREGA
     window.addEventListener('storage', function(e) {
