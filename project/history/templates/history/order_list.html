@@ -172,10 +172,10 @@
                                     <td class="px-4 xl:px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">
                                             {% if order.delivery_type == 'delivery' %}
-                                                <span class="material-icons text-sm mr-1">local_shipping</span>
+                                                <span class="material-icons text-sm mr-1 text-blue-600">local_shipping</span>
                                                 Delivery
                                             {% else %}
-                                                <span class="material-icons text-sm mr-1">store</span>
+                                                <span class="material-icons text-sm mr-1 text-blue-600">store</span>
                                                 Recoger
                                             {% endif %}
                                         </div>
@@ -255,11 +255,11 @@
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center text-sm text-gray-900">
                                     {% if order.delivery_type == 'delivery' %}
-                                        <span class="material-icons text-sm mr-1">local_shipping</span>
+                                        <span class="material-icons text-sm mr-1 text-blue-600">local_shipping</span>
                                         <span class="hidden sm:inline">Delivery - </span>
                                         <span class="sm:hidden">Del - </span>
                                     {% else %}
-                                        <span class="material-icons text-sm mr-1">store</span>
+                                        <span class="material-icons text-sm mr-1 text-blue-600">store</span>
                                         <span class="hidden sm:inline">Recoger - </span>
                                         <span class="sm:hidden">Rec - </span>
                                     {% endif %}
@@ -277,39 +277,124 @@
                 </div>
             </div>
             
-            <!-- Paginación -->
+            <!-- Paginación personalizada mejorada -->
             {% if page_obj.has_other_pages %}
-                <div class="bg-white px-3 md:px-4 py-3 flex items-center justify-between border-t border-gray-200">
-                    <div class="flex-1 flex justify-between sm:hidden">
-                        {% if page_obj.has_previous %}
-                            <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Anterior</a>
-                        {% endif %}
-                        {% if page_obj.has_next %}
-                            <a href="?page={{ page_obj.next_page_number }}" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">Siguiente</a>
-                        {% endif %}
+                <div class="bg-white px-3 md:px-6 py-4 flex items-center justify-between border-t border-gray-200">
+                    <!-- Paginación móvil MEJORADA -->
+                    <div class="flex-1 flex justify-center sm:hidden">
+                        <div class="flex items-center gap-2">
+                            <!-- Botón anterior -->
+                            {% if page_obj.has_previous %}
+                                <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                   class="relative inline-flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
+                                    <span class="material-icons text-lg">chevron_left</span>
+                                </a>
+                            {% else %}
+                                <span class="relative inline-flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-400 bg-gray-50 cursor-not-allowed shadow-sm">
+                                    <span class="material-icons text-lg">chevron_left</span>
+                                </span>
+                            {% endif %}
+                            
+                            <!-- Páginas numéricas visibles en móvil -->
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <span class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg border border-orange-500 bg-orange-600 text-sm font-bold text-white shadow-sm">
+                                        {{ num }}
+                                    </span>
+                                {% elif num > page_obj.number|add:'-2' and num < page_obj.number|add:'2' %}
+                                    <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
+                                        {{ num }}
+                                    </a>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Botón siguiente -->
+                            {% if page_obj.has_next %}
+                                <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                   class="relative inline-flex items-center justify-center w-10 h-10 border border-gray-300 rounded-lg text-gray-700 bg-white hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors shadow-sm">
+                                    <span class="material-icons text-lg">chevron_right</span>
+                                </a>
+                            {% else %}
+                                <span class="relative inline-flex items-center justify-center w-10 h-10 border border-gray-200 rounded-lg text-gray-400 bg-gray-50 cursor-not-allowed shadow-sm">
+                                    <span class="material-icons text-lg">chevron_right</span>
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Información de páginas debajo (opcional) -->
+                        <div class="absolute bottom-1 left-1/2 transform -translate-x-1/2">
+                            <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded shadow">
+                                {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                            </span>
+                        </div>
                     </div>
+                    
+                    <!-- Paginación desktop (sin cambios) -->
                     <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                         <div>
-                            <p class="text-xs md:text-sm text-gray-700">
-                                Mostrando <span class="font-medium">{{ page_obj.start_index }}</span> a 
-                                <span class="font-medium">{{ page_obj.end_index }}</span> de 
-                                <span class="font-medium">{{ page_obj.paginator.count }}</span> resultados
+                            <p class="text-sm text-gray-700">
+                                Mostrando <span class="font-medium text-orange-600">{{ page_obj.start_index }}</span> a 
+                                <span class="font-medium text-orange-600">{{ page_obj.end_index }}</span> de 
+                                <span class="font-medium text-orange-600">{{ page_obj.paginator.count }}</span> resultados
                             </p>
                         </div>
                         <div>
-                            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            <nav class="relative z-0 inline-flex gap-1 rounded-lg shadow-sm">
+                                <!-- Primera página -->
                                 {% if page_obj.has_previous %}
-                                    <a href="?page=1" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">Primera</a>
-                                    <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">Anterior</a>
+                                    <a href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                                        <span class="material-icons text-sm">first_page</span>
+                                    </a>
+                                    <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                                        <span class="material-icons text-sm">chevron_left</span>
+                                    </a>
+                                {% else %}
+                                    <span class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                        <span class="material-icons text-sm">first_page</span>
+                                    </span>
+                                    <span class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                        <span class="material-icons text-sm">chevron_left</span>
+                                    </span>
                                 {% endif %}
                                 
-                                <span class="relative inline-flex items-center px-2 md:px-4 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-700">
-                                    <span class="hidden md:inline">Página </span>{{ page_obj.number }}<span class="hidden md:inline"> de {{ page_obj.paginator.num_pages }}</span>
-                                </span>
+                                <!-- Páginas numéricas con mejor espaciado -->
+                                {% for num in page_obj.paginator.page_range %}
+                                    {% if page_obj.number == num %}
+                                        <span class="relative inline-flex items-center px-4 py-2 rounded-lg border border-orange-500 bg-orange-600 text-sm font-semibold text-white shadow-sm">
+                                            {{ num }}
+                                        </span>
+                                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                        <a href="?page={{ num }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                           class="relative inline-flex items-center px-4 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                                            {{ num }}
+                                        </a>
+                                    {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                                        <span class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500">
+                                            ...
+                                        </span>
+                                    {% endif %}
+                                {% endfor %}
                                 
+                                <!-- Última página -->
                                 {% if page_obj.has_next %}
-                                    <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">Siguiente</a>
-                                    <a href="?page={{ page_obj.paginator.num_pages }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-xs md:text-sm font-medium text-gray-500 hover:bg-gray-50">Última</a>
+                                    <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                                        <span class="material-icons text-sm">chevron_right</span>
+                                    </a>
+                                    <a href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" 
+                                       class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-600 transition-colors">
+                                        <span class="material-icons text-sm">last_page</span>
+                                    </a>
+                                {% else %}
+                                    <span class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                        <span class="material-icons text-sm">chevron_right</span>
+                                    </span>
+                                    <span class="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-400 cursor-not-allowed">
+                                        <span class="material-icons text-sm">last_page</span>
+                                    </span>
                                 {% endif %}
                             </nav>
                         </div>

@@ -43,7 +43,6 @@ def order_history_list(request):
     # Ordenar por fecha más reciente
     orders = orders.order_by('-created_at')
     
-    # ✅ RECALCULAR TOTALES para pedidos antiguos que no tienen delivery_fee calculado
 
     for i, order in enumerate(orders):
         # Calcular subtotal de productos
@@ -67,7 +66,7 @@ def order_history_list(request):
             order.calculated_subtotal >= settings.free_delivery_threshold
         )
         
-    # Paginación
+        # Paginación
     paginator = Paginator(orders, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
