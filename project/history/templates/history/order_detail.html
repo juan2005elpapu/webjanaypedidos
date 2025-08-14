@@ -4,6 +4,9 @@
 {% block title %}{{ title }} | Janay Pedidos{% endblock %}
 
 {% block main_content %}
+<!-- Agregar el CSRF token al inicio del template -->
+{% csrf_token %}
+
 <div class="mb-4 md:mb-6">
     <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
         <div>
@@ -62,7 +65,7 @@
                         <dd class="mt-1 text-sm text-gray-900">
                             {% if order.delivery_type == 'delivery' %}
                                 <span class="inline-flex items-center">
-                                    <span class="material-icons text-sm mr-1">local_shipping</span>
+                                    <span class="material-icons text-sm mr-1 text-blue-600">local_shipping</span>
                                     Delivery
                                 </span>
                             {% else %}
@@ -168,15 +171,15 @@
                     {% if order.delivery_type == 'delivery' %}
                         <div class="flex justify-between">
                             <dt class="text-sm text-gray-600">Envío</dt>
-                            <dd class="text-sm font-medium">
+                            <dd class="text-sm font-medium text-right">
                                 {% if order.qualifies_for_free_shipping %}
                                     <span class="text-green-600 font-semibold">¡Gratis!</span>
-                                    <div class="text-xs text-gray-500">
+                                    <div class="text-xs text-gray-500 mt-1">
                                         (Envío gratis desde ${{ settings.free_delivery_threshold|floatformat:0|intcomma }})
                                     </div>
                                 {% else %}
                                     <span class="text-gray-900">${{ order.calculated_shipping|floatformat:0|intcomma }}</span>
-                                    <div class="text-xs text-gray-500">
+                                    <div class="text-xs text-gray-500 mt-1">
                                         <!-- Calcular directamente usando JavaScript -->
                                         <span id="remaining-amount"></span> para envío gratis
                                         <script>
@@ -215,6 +218,154 @@
                 </div>
             </div>
         </div>
+
+        <!-- Botones de acciones del pedido -->
+        {% if order.status != 'cancelled' and order.status != 'delivered' %}
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Acciones del Pedido</h3>
+                <div class="space-y-3">
+                    <!-- Botón Modificar Pedido -->
+                    <button type="button" 
+                            class="w-full inline-flex items-center justify-center px-4 py-2 border border-orange-600 text-orange-600 bg-white rounded-md text-sm font-medium hover:bg-orange-50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            id="modify-order-btn"
+                            disabled>
+                        <span class="material-icons mr-2 text-base">edit</span>
+                        Modificar Pedido
+                    </button>
+                    
+                    <!-- Botón Cancelar Pedido -->
+                    <button type="button" 
+                            class="w-full inline-flex items-center justify-center px-4 py-2 border border-red-600 text-red-600 bg-white rounded-md text-sm font-medium hover:bg-red-50 transition-colors duration-200"
+                            id="cancel-order-btn"
+                            onclick="showCancelModal()">
+                        <span class="material-icons mr-2 text-base">cancel</span>
+                        Cancelar Pedido
+                    </button>
+                </div>
+                
+                <!-- Información sobre modificaciones -->
+                <div class="mt-4 p-3 bg-gray-50 rounded-lg">
+                    <div class="text-xs text-gray-600 space-y-1">
+                        <p><strong>Modificaciones:</strong> Solo disponible hasta el día anterior a la entrega</p>
+                        <p><strong>Cancelaciones:</strong> Puedes cancelar tu pedido si aún no está en preparación</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
+
+<!-- Modal de confirmación para cancelar - VERSIÓN RESPONSIVE -->
+<div id="cancel-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" style="display: none;">
+    <div class="relative mx-auto p-3 border shadow-lg rounded-md bg-white" style="top: 50%; transform: translateY(-50%); width: 95%; max-width: 400px;">
+        <div class="text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <span class="material-icons text-red-600">warning</span>
+            </div>
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-3">Cancelar Pedido</h3>
+            <div class="mb-4 px-2">
+                <p class="text-sm text-gray-500 mb-2">
+                    ¿Estás seguro de que deseas cancelar este pedido? Esta acción no se puede deshacer.
+                </p>
+                <p class="text-sm text-red-600 font-medium">
+                    Pedido #{{ order.order_number }}
+                </p>
+            </div>
+            <div class="flex flex-col space-y-2 px-2">
+                <button id="confirm-cancel" 
+                        class="w-full px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                    Confirmar Cancelación
+                </button>
+                <button id="close-cancel-modal" 
+                        class="w-full px-4 py-2 bg-gray-300 text-gray-700 text-sm font-medium rounded-md shadow-sm hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                    Mantener Pedido
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showCancelModal() {
+    document.getElementById('cancel-modal').style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCancelModal() {
+    document.getElementById('cancel-modal').style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+document.getElementById('close-cancel-modal').addEventListener('click', closeCancelModal);
+
+document.getElementById('confirm-cancel').addEventListener('click', function() {
+    // Mostrar loading
+    this.innerHTML = '<span class="material-icons animate-spin mr-2">refresh</span>Cancelando...';
+    this.disabled = true;
+    
+    // Obtener CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    if (!csrfToken) {
+        console.error('CSRF token no encontrado');
+        alert('Error de seguridad. Por favor recarga la página.');
+        this.innerHTML = 'Confirmar Cancelación';
+        this.disabled = false;
+        return;
+    }
+    
+    // ✅ CAMBIAR ESTA LÍNEA - Quitar "orders" de la URL
+    fetch(`/history/{{ order.id }}/cancel/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'action': 'cancel'
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Pedido cancelado exitosamente');
+            window.location.reload();
+        } else {
+            alert(data.message || 'Error al cancelar el pedido');
+            this.innerHTML = 'Confirmar Cancelación';
+            this.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cancelar el pedido: ' + error.message);
+        this.innerHTML = 'Confirmar Cancelación';
+        this.disabled = false;
+    })
+    .finally(() => {
+        closeCancelModal();
+    });
+});
+
+// Cerrar modal al hacer clic fuera
+document.getElementById('cancel-modal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeCancelModal();
+    }
+});
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeCancelModal();
+    }
+});
+</script>
 {% endblock %}

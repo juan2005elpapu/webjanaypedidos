@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+import json
 from orders.models import Order, BusinessSettings  # ✅ IMPORTAR BusinessSettings también
 
 
@@ -139,3 +142,45 @@ def order_detail_history(request, order_id):
     
     
     return render(request, 'history/order_detail.html', context)
+
+@login_required
+@require_http_methods(["POST"])
+def cancel_order(request, order_id):
+    """Vista para cancelar un pedido"""
+    
+    try:
+        # Obtener el pedido del usuario
+        order = get_object_or_404(
+            Order.objects.select_related('user'), 
+            id=order_id, 
+            user=request.user
+        )
+        
+        # Verificar que el pedido se pueda cancelar
+        if order.status in ['cancelled', 'delivered']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Este pedido no se puede cancelar'
+            })
+        
+        # Verificar si ya está en preparación (opcional - depende de tu lógica de negocio)
+        if order.status in ['preparing', 'ready']:
+            return JsonResponse({
+                'success': False,
+                'message': 'No se puede cancelar un pedido que ya está en preparación'
+            })
+        
+        # Cambiar el estado a cancelado
+        order.status = 'cancelled'
+        order.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Pedido cancelado exitosamente'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': 'Error interno del servidor'
+        })
