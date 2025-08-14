@@ -262,7 +262,8 @@ const products = {
 
 const settings = {
     "minimumOrder": {{ settings.minimum_order_amount|default:20000|floatformat:0 }},
-    "freeDeliveryThreshold": {{ settings.free_delivery_threshold|default:50000|floatformat:0 }}
+    "freeDeliveryThreshold": {{ settings.free_delivery_threshold|default:50000|floatformat:0 }},
+    "deliveryCost": {{ settings.delivery_cost|default:5000|floatformat:0 }}  // ✅ AGREGAR: Costo de envío configurable
 };
 
 let selectedProducts = new Set();
@@ -938,7 +939,7 @@ window.calculateTotal = function() {
     // CALCULAR ENVÍO BASADO EN EL TIPO DE ENTREGA
     let shipping = 0;
     if (deliveryType === 'delivery') {
-        shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+        shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : settings.deliveryCost; // ✅ CAMBIO: Usar configuración
     } else {
         shipping = 0; // Sin costo de envío para pickup
     }

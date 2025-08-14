@@ -58,7 +58,7 @@ def order_history_list(request):
             if order.calculated_subtotal >= settings.free_delivery_threshold:
                 order.calculated_shipping = 0
             else:
-                order.calculated_shipping = 5000  # Costo fijo de envío
+                order.calculated_shipping = settings.delivery_cost  # ✅ CAMBIO: Usar configuración del negocio
         else:
             order.calculated_shipping = 0
         
@@ -126,7 +126,7 @@ def order_detail_history(request, order_id):
         if order.calculated_subtotal >= settings.free_delivery_threshold:
             order.calculated_shipping = 0
         else:
-            order.calculated_shipping = 5000  # Costo fijo de envío
+            order.calculated_shipping = settings.delivery_cost  # ✅ CAMBIO: Usar configuración del negocio
     else:
         order.calculated_shipping = 0
     

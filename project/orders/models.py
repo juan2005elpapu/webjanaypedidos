@@ -166,36 +166,10 @@ class Order(models.Model):
         if self.qualifies_for_free_delivery:
             return Decimal('0')
         
-        # Tarifas base por zona (en COP)
-        base_fee = Decimal('8000')  # Tarifa base
-        
-        # Incremento por distancia (simulado por barrios)
-        distance_zones = {
-            'centro': Decimal('0'),
-            'norte': Decimal('2000'),
-            'sur': Decimal('3000'),
-            'este': Decimal('2500'),
-            'oeste': Decimal('3500'),
-            'rural': Decimal('5000'),
-        }
-        
-        # Buscar zona por barrio (implementación básica)
-        zone_fee = Decimal('2000')  # Default para zonas no especificadas
-        if self.delivery_neighborhood:
-            neighborhood_lower = self.delivery_neighborhood.lower()
-            for zone, fee in distance_zones.items():
-                if zone in neighborhood_lower:
-                    zone_fee = fee
-                    break
-        
-        # Incremento por cantidad de productos
-        total_items = sum(item.quantity for item in self.items.all())
-        if total_items > 10:
-            quantity_fee = Decimal('1000')
-        else:
-            quantity_fee = Decimal('0')
-        
-        return base_fee + zone_fee + quantity_fee
+        # ✅ CAMBIAR: Usar configuración en lugar de valor fijo
+        settings = BusinessSettings.get_settings()
+        return settings.delivery_cost
+    
     
     def calculate_total(self):
         """Calcular el total basado en los items"""
@@ -304,6 +278,14 @@ class BusinessSettings(models.Model):
         default=Decimal('500000'),
         verbose_name='Monto para envío gratis'
     )
+    delivery_cost = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2, 
+        default=Decimal('5000'),
+        verbose_name='Costo de envío',
+        help_text='Precio del envío cuando no califica para envío gratis'
+    )
+    
     min_advance_days = models.PositiveIntegerField(default=2, verbose_name='Días mínimos de anticipación')
     max_advance_days = models.PositiveIntegerField(default=90, verbose_name='Días máximos de anticipación')
     
@@ -350,6 +332,7 @@ class BusinessSettings(models.Model):
                 contact_phone='+57 300 123 4567',
                 address='Villanueva, Casanare, Colombia',
                 city='Villanueva',
-                department='Casanare'
+                department='Casanare',
+                delivery_cost=Decimal('5000')
             )
         return settings

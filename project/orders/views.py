@@ -324,7 +324,7 @@ def order_step3(request):
             
             # Solo aplicar costo de envío si es delivery
             if order_info.get('delivery_type') == 'delivery':
-                shipping_cost = 0 if total_amount >= settings.free_delivery_threshold else 5000
+                shipping_cost = 0 if total_amount >= settings.free_delivery_threshold else settings.delivery_cost
             
             # Actualizar totales del pedido
             order.subtotal = total_amount

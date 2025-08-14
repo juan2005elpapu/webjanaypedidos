@@ -99,7 +99,7 @@ class OrderModificationRequestAdmin(ModelAdmin):
 
 @admin.register(BusinessSettings)
 class BusinessSettingsAdmin(ModelAdmin):
-    list_display = ('business_name', 'contact_email', 'minimum_order_amount', 'free_delivery_threshold')
+    list_display = ('business_name', 'contact_email', 'minimum_order_amount', 'free_delivery_threshold', 'delivery_cost')  # ✅ AGREGAR delivery_cost
     
     fieldsets = (
         ('Información del Negocio', {
@@ -109,7 +109,7 @@ class BusinessSettingsAdmin(ModelAdmin):
             'fields': ('contact_email', 'contact_phone', 'whatsapp_number')
         }),
         ('Configuración de Pedidos', {
-            'fields': ('minimum_order_amount', 'free_delivery_threshold', 'min_advance_days', 'max_advance_days')
+            'fields': ('minimum_order_amount', 'free_delivery_threshold', 'delivery_cost', 'min_advance_days', 'max_advance_days')  # ✅ AGREGAR delivery_cost
         }),
         ('Horarios', {
             'fields': ('delivery_start_time', 'delivery_end_time')

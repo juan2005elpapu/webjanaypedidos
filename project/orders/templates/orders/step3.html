@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // CALCULAR ENVÍO BASADO EN EL TIPO DE ENTREGA
         let shipping = 0;
         if (deliveryType === 'delivery') {
-            shipping = subtotal >= settings.freeDeliveryThreshold ? 0 : 5000;
+            shipping = subtotal >= settings.freeDeliveryThreshold ? 0 :  settings.deliveryCost;
         } else {
             shipping = 0; // Sin costo de envío para pickup
         }
