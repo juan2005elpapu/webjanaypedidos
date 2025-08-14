@@ -4,8 +4,10 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
+from datetime import datetime, timedelta
 import json
-from orders.models import Order, BusinessSettings  # ✅ IMPORTAR BusinessSettings también
+from orders.models import Order, BusinessSettings
 
 
 @login_required
@@ -69,7 +71,10 @@ def order_history_list(request):
             order.calculated_subtotal >= settings.free_delivery_threshold
         )
         
-        # Paginación
+        # ✅ AGREGAR: Verificar si se puede cancelar (24 horas antes)
+        order.can_be_cancelled = _can_cancel_order(order)
+        
+    # Paginación
     paginator = Paginator(orders, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -134,6 +139,9 @@ def order_detail_history(request, order_id):
         order.calculated_subtotal >= settings.free_delivery_threshold
     )
 
+    # ✅ AGREGAR: Verificar si se puede cancelar (24 horas antes)
+    order.can_be_cancelled = _can_cancel_order(order)
+
     context = {
         'order': order,
         'settings': settings,
@@ -142,6 +150,37 @@ def order_detail_history(request, order_id):
     
     
     return render(request, 'history/order_detail.html', context)
+
+def _can_cancel_order(order):
+    """
+    Función auxiliar para verificar si un pedido se puede cancelar.
+    Reglas:
+    1. No debe estar cancelado o entregado
+    2. No debe estar en preparación o listo
+    3. Debe haber mínimo 24 horas hasta la entrega
+    """
+    
+    # Verificar estados que no permiten cancelación
+    if order.status in ['cancelled', 'delivered', 'preparing', 'ready']:
+        return False
+    
+    # Combinar fecha y hora de entrega deseada
+    try:
+        # Crear datetime combinando fecha y hora deseadas
+        delivery_datetime = datetime.combine(order.desired_date, order.desired_time)
+        
+        # Obtener datetime actual
+        now = datetime.now()
+        
+        # Calcular diferencia
+        time_until_delivery = delivery_datetime - now
+        
+        # Verificar si hay al menos 24 horas (1 día)
+        return time_until_delivery.total_seconds() >= 24 * 60 * 60  # 24 horas en segundos
+        
+    except Exception:
+        # Si hay algún error en el cálculo, por seguridad no permitir cancelación
+        return False
 
 @login_required
 @require_http_methods(["POST"])
@@ -156,18 +195,31 @@ def cancel_order(request, order_id):
             user=request.user
         )
         
-        # Verificar que el pedido se pueda cancelar
-        if order.status in ['cancelled', 'delivered']:
+        # ✅ VERIFICAR con la nueva función
+        if not _can_cancel_order(order):
+            # Determinar el mensaje específico según la razón
+            if order.status in ['cancelled', 'delivered']:
+                message = 'Este pedido no se puede cancelar porque ya está cancelado o entregado'
+            elif order.status in ['preparing', 'ready']:
+                message = 'No se puede cancelar un pedido que ya está en preparación'
+            else:
+                # Verificar si es por el tiempo
+                delivery_datetime = datetime.combine(order.desired_date, order.desired_time)
+                now = datetime.now()
+                time_until_delivery = delivery_datetime - now
+                
+                if time_until_delivery.total_seconds() < 24 * 60 * 60:
+                    hours_remaining = int(time_until_delivery.total_seconds() / 3600)
+                    if hours_remaining <= 0:
+                        message = 'No se puede cancelar un pedido programado para hoy'
+                    else:
+                        message = f'No se puede cancelar. Solo quedan {hours_remaining} horas para la entrega (mínimo 24 horas requeridas)'
+                else:
+                    message = 'Este pedido no se puede cancelar'
+            
             return JsonResponse({
                 'success': False,
-                'message': 'Este pedido no se puede cancelar'
-            })
-        
-        # Verificar si ya está en preparación (opcional - depende de tu lógica de negocio)
-        if order.status in ['preparing', 'ready']:
-            return JsonResponse({
-                'success': False,
-                'message': 'No se puede cancelar un pedido que ya está en preparación'
+                'message': message
             })
         
         # Cambiar el estado a cancelado

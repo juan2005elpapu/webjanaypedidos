@@ -51,6 +51,8 @@
                                 {% elif order.status == 'ready' %}bg-orange-100 text-orange-800
                                 {% elif order.status == 'delivered' %}bg-green-100 text-green-800
                                 {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
+                                {% elif order.status == 'in_transit' %}bg-indigo-100 text-indigo-800
+                                {% elif order.status == 'modification_requested' %}bg-pink-100 text-pink-800
                                 {% else %}bg-gray-100 text-gray-800{% endif %}">
                                 {{ order.get_status_display }}
                             </span>
@@ -235,20 +237,33 @@
                     </button>
                     
                     <!-- Botón Cancelar Pedido -->
-                    <button type="button" 
-                            class="w-full inline-flex items-center justify-center px-4 py-2 border border-red-600 text-red-600 bg-white rounded-md text-sm font-medium hover:bg-red-50 transition-colors duration-200"
-                            id="cancel-order-btn"
-                            onclick="showCancelModal()">
-                        <span class="material-icons mr-2 text-base">cancel</span>
-                        Cancelar Pedido
-                    </button>
+                    {% if order.can_be_cancelled %}
+                        <button type="button" 
+                                class="w-full inline-flex items-center justify-center px-4 py-2 border border-red-600 text-red-600 bg-white rounded-md text-sm font-medium hover:bg-red-50 transition-colors duration-200"
+                                id="cancel-order-btn"
+                                onclick="showCancelModal()">
+                            <span class="material-icons mr-2 text-base">cancel</span>
+                            Cancelar Pedido
+                        </button>
+                    {% else %}
+                        <div class="w-full inline-flex items-center justify-center px-4 py-2 border border-gray-300 text-gray-500 bg-gray-50 rounded-md text-sm font-medium cursor-not-allowed">
+                            <span class="material-icons mr-2 text-base">block</span>
+                            No se puede cancelar
+                        </div>
+                    {% endif %}
                 </div>
                 
                 <!-- Información sobre modificaciones -->
                 <div class="mt-4 p-3 bg-gray-50 rounded-lg">
                     <div class="text-xs text-gray-600 space-y-1">
                         <p><strong>Modificaciones:</strong> Solo disponible hasta el día anterior a la entrega</p>
-                        <p><strong>Cancelaciones:</strong> Puedes cancelar tu pedido si aún no está en preparación</p>
+                        <p><strong>Cancelaciones:</strong> Solo hasta 24 horas antes de la entrega</p>
+                        {% if not order.can_be_cancelled and order.status not in 'cancelled,delivered' %}
+                            <p class="text-red-600 font-medium mt-2">
+                                <span class="material-icons text-xs mr-1">schedule</span>
+                                Este pedido ya no se puede cancelar (menos de 24 horas para la entrega)
+                            </p>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -316,7 +331,7 @@ document.getElementById('confirm-cancel').addEventListener('click', function() {
         return;
     }
     
-    // ✅ CAMBIAR ESTA LÍNEA - Quitar "orders" de la URL
+    // Hacer petición para cancelar el pedido
     fetch(`/history/{{ order.id }}/cancel/`, {
         method: 'POST',
         headers: {
@@ -336,7 +351,8 @@ document.getElementById('confirm-cancel').addEventListener('click', function() {
     .then(data => {
         if (data.success) {
             alert('Pedido cancelado exitosamente');
-            window.location.reload();
+            // ✅ CAMBIO: Redirigir a la lista de pedidos en lugar de recargar
+            window.location.href = "{% url 'history:orders' %}";
         } else {
             alert(data.message || 'Error al cancelar el pedido');
             this.innerHTML = 'Confirmar Cancelación';
