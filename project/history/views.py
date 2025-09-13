@@ -3,11 +3,13 @@ from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import JsonResponse
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.utils import timezone
+from django.contrib import messages
+from django.shortcuts import redirect
 from datetime import datetime, timedelta
 import json
-from orders.models import Order, BusinessSettings
+from orders.models import Order, BusinessSettings, OrderModificationRequest
 
 
 @login_required
@@ -107,13 +109,16 @@ def order_history_list(request):
 def order_detail_history(request, order_id):
     """Vista de detalle de un pedido específico"""
     
-    # ✅ USAR directamente el modelo Order existente
     order = get_object_or_404(
         Order.objects.prefetch_related('items__product'), 
         id=order_id, 
         user=request.user
     )
     
+    # ✅ CAMBIO: Siempre obtener la solicitud más reciente (si existe)
+    modification_request = OrderModificationRequest.objects.filter(
+        order=order
+    ).order_by('-created_at').first()
     
     # ✅ CALCULAR totales correctos igual que en la lista
     settings = BusinessSettings.get_settings()
@@ -126,7 +131,7 @@ def order_detail_history(request, order_id):
         if order.calculated_subtotal >= settings.free_delivery_threshold:
             order.calculated_shipping = 0
         else:
-            order.calculated_shipping = settings.delivery_cost  # ✅ CAMBIO: Usar configuración del negocio
+            order.calculated_shipping = settings.delivery_cost
     else:
         order.calculated_shipping = 0
     
@@ -139,15 +144,15 @@ def order_detail_history(request, order_id):
         order.calculated_subtotal >= settings.free_delivery_threshold
     )
 
-    # ✅ AGREGAR: Verificar si se puede cancelar (24 horas antes)
+    # Verificar si se puede cancelar (24 horas antes)
     order.can_be_cancelled = _can_cancel_order(order)
 
     context = {
         'order': order,
         'settings': settings,
+        'modification_request': modification_request,  # ✅ Siempre incluir si existe
         'title': f'Pedido #{order.order_number}'
     }
-    
     
     return render(request, 'history/order_detail.html', context)
 
@@ -235,4 +240,97 @@ def cancel_order(request, order_id):
         return JsonResponse({
             'success': False,
             'message': 'Error interno del servidor'
+        })
+
+@login_required
+def modify_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    
+    # ✅ SIMPLIFICAR: Solo verificar estado y tiempo
+    if order.status != 'confirmed':
+        messages.error(request, 'Solo se pueden modificar pedidos que estén confirmados.')
+        return redirect('history:order_detail', order_id=order_id)
+    
+    # Verificar si el pedido puede ser modificado (tiempo)
+    if not order.can_be_modified:
+        messages.error(request, 'Este pedido ya no puede ser modificado (muy cerca de la entrega).')
+        return redirect('history:order_detail', order_id=order_id)
+    
+    # ✅ AGREGAR: Obtener la última solicitud para mostrar historial (opcional)
+    latest_request = OrderModificationRequest.objects.filter(
+        order=order
+    ).order_by('-created_at').first()
+    
+    context = {
+        'title': f'Modificar Pedido #{order.order_number}',
+        'order': order,
+        'latest_request': latest_request,  # Para mostrar historial si se desea
+    }
+    return render(request, 'history/order_modification.html', context)
+
+@login_required
+@require_POST
+def submit_modification(request, order_id):
+    try:
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+        
+        # ✅ VERIFICAR: Solo estado del pedido
+        if order.status != 'confirmed':
+            return JsonResponse({
+                'success': False,
+                'message': 'Solo se pueden modificar pedidos confirmados.'
+            })
+        
+        # Verificar tiempo límite
+        if not order.can_be_modified:
+            return JsonResponse({
+                'success': False,
+                'message': 'Este pedido ya no puede ser modificado (muy cerca de la entrega).'
+            })
+        
+        data = json.loads(request.body)
+        modification_details = data.get('modification_details', '').strip()
+        modification_type = data.get('modification_type', 'general') or 'general'
+        
+        if not modification_details:
+            return JsonResponse({
+                'success': False,
+                'message': 'Por favor, especifica los detalles de la modificación.'
+            })
+        
+        # ✅ SIEMPRE crear nueva solicitud de modificación
+        modification_request = OrderModificationRequest.objects.create(
+            order=order,
+            requested_by=request.user,
+            modification_type=modification_type,
+            current_data={
+                'customer_name': order.customer_name,
+                'customer_phone': order.customer_phone,
+                'delivery_type': order.delivery_type,
+                'delivery_address': order.delivery_address,
+                'delivery_neighborhood': order.delivery_neighborhood,
+                'desired_date': str(order.desired_date),
+                'desired_time': str(order.desired_time),
+                'notes': order.notes,
+            },
+            requested_data={
+                'modification_details': modification_details,
+                'modification_type': modification_type
+            },
+            reason=modification_details
+        )
+        
+        # ✅ CAMBIAR estado del pedido a 'modification_requested'
+        order.status = 'modification_requested'
+        order.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Solicitud de modificación enviada exitosamente. Te contactaremos pronto.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al procesar la solicitud: {str(e)}'
         })

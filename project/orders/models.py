@@ -8,6 +8,7 @@ import json
 import random
 import string
 from datetime import datetime
+from django.utils import timezone
         
 
 class Order(models.Model):
@@ -138,15 +139,27 @@ class Order(models.Model):
     
     @property
     def can_be_modified(self):
-        """Verifica si el pedido puede ser modificado directamente"""
-        if self.status in ['delivered', 'cancelled']:
+        """
+        Verifica si el pedido puede ser modificado.
+        Solo se puede modificar hasta 4 horas antes de la entrega,
+        y únicamente si está en estado 'confirmed'.
+        """
+        if self.status in ['cancelled', 'delivered']:
             return False
         
-        # Si es el mismo día, necesita autorización del admin
-        if self.desired_date == timezone.now().date():
+        # ✅ CAMBIO: Solo puede modificar si está confirmado
+        if self.status != 'confirmed':
             return False
+            
+        # ✅ ELIMINAR: Ya no verificamos solicitudes de modificación
+        # El estado del pedido es suficiente para controlar esto
+            
+        # Verificar que no sea muy cerca de la entrega (4 horas antes)
+        now = timezone.now()
+        delivery_datetime = timezone.datetime.combine(self.desired_date, self.desired_time)
+        delivery_datetime = timezone.make_aware(delivery_datetime)
         
-        return True
+        return delivery_datetime > now + timezone.timedelta(hours=4)
     
     @property
     def meets_minimum_order(self):
@@ -224,23 +237,21 @@ class OrderItem(models.Model):
 
 class OrderModificationRequest(models.Model):
     """Modelo para solicitudes de modificación de pedidos"""
-    STATUS_CHOICES = [
-        ('pending', 'Pendiente'),
-        ('approved', 'Aprobada'),
-        ('rejected', 'Rechazada'),
-    ]
     
     order = models.ForeignKey(Order, on_delete=models.CASCADE, verbose_name='Pedido')
     requested_by = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name='Solicitado por')
     
     # Información de la modificación
-    modification_type = models.CharField(max_length=50, verbose_name='Tipo de modificación')
+    modification_type = models.CharField(
+        max_length=50, 
+        default='general',
+        verbose_name='Tipo de modificación',
+        help_text='Ejemplo: cambio de fecha, cambio de dirección, etc.'
+    )
     current_data = models.JSONField(verbose_name='Datos actuales')
     requested_data = models.JSONField(verbose_name='Datos solicitados')
     reason = models.TextField(verbose_name='Razón de la modificación')
     
-    # Estado de la solicitud
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending', verbose_name='Estado')
     admin_response = models.TextField(blank=True, verbose_name='Respuesta del administrador')
     reviewed_by = models.ForeignKey(
         User, 
@@ -260,7 +271,17 @@ class OrderModificationRequest(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"Modificación {self.order.order_number} - {self.get_status_display()}"
+        return f"Modificación {self.order.order_number} - {self.modification_type.title()}"
+    
+    @property
+    def status(self):
+        """El estado se obtiene del pedido asociado"""
+        return self.order.status
+    
+    @property
+    def status_display(self):
+        """Obtiene el display del estado del pedido"""
+        return self.order.get_status_display()
 
 
 class BusinessSettings(models.Model):

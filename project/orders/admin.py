@@ -92,10 +92,153 @@ class OrderItemAdmin(ModelAdmin):
 
 @admin.register(OrderModificationRequest)
 class OrderModificationRequestAdmin(ModelAdmin):
-    list_display = ('order', 'modification_type', 'status', 'requested_by', 'created_at')
-    list_filter = ('status', 'modification_type', 'created_at')
+    list_display = ('order_info', 'modification_type', 'order_status_link', 'requested_by', 'created_at')
+    list_filter = ('modification_type', 'order__status', 'created_at')
     search_fields = ('order__order_number', 'order__customer_name', 'reason')
-    readonly_fields = ('created_at', 'reviewed_at')
+    
+    # ✅ CORREGIR: Agregar los métodos personalizados a readonly_fields
+    readonly_fields = (
+        'created_at', 'reviewed_at', 'order_link', 
+        'current_data_formatted', 'requested_data_formatted', 'manage_order_status'
+    )
+    
+    fieldsets = (
+        ('Información de la Solicitud', {
+            'fields': ('order_link', 'requested_by', 'modification_type', 'created_at')
+        }),
+        ('Detalles de la Modificación', {
+            'fields': ('reason',),
+        }),
+        ('Datos Actuales vs Solicitados', {
+            'fields': ('current_data_formatted', 'requested_data_formatted'),
+            'classes': ('wide',)
+        }),
+        ('Gestión del Pedido', {
+            'fields': ('manage_order_status',),
+            'description': 'Gestionar el estado del pedido asociado:'
+        }),
+        ('Respuesta del Administrador', {
+            'fields': ('admin_response', 'reviewed_by', 'reviewed_at'),
+        }),
+    )
+    
+    def order_info(self, obj):
+        """Mostrar información básica del pedido (NO clickeable para ver modificación)"""
+        return f"{obj.order.order_number} - {obj.order.customer_name}"
+    order_info.short_description = 'Información del Pedido'
+    
+    def order_link(self, obj):
+        """Link directo al pedido en el admin de Order"""
+        if obj.pk:
+            url = reverse('admin:orders_order_change', args=[obj.order.id])
+            return format_html(
+                '<a href="{}" class="button" target="_blank">Ver/Editar Pedido {}</a>',
+                url, obj.order.order_number
+            )
+        return "Guarda primero"
+    order_link.short_description = 'Gestionar Pedido'
+    
+    def order_status_link(self, obj):
+        """Estado del pedido CON link al pedido"""
+        colors = {
+            'pending': '#f59e0b',
+            'confirmed': '#3b82f6',
+            'preparing': '#8b5cf6',
+            'ready': '#f97316',
+            'delivered': '#10b981',
+            'cancelled': '#ef4444',
+            'modification_requested': '#ec4899'
+        }
+        color = colors.get(obj.order.status, '#6b7280')
+        url = reverse('admin:orders_order_change', args=[obj.order.id])
+        return format_html(
+            '<a href="{}" style="color: {}; font-weight: bold; text-decoration: none;">{}</a>',
+            url, color, obj.order.get_status_display()
+        )
+    order_status_link.short_description = 'Estado (Click para gestionar)'
+    
+    def current_data_formatted(self, obj):
+        """Formatear los datos actuales de manera legible"""
+        if obj.current_data:
+            html = "<div style='background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6;'>"
+            html += "<h4 style='margin: 0 0 10px 0; color: #495057; font-size: 14px;'>📋 Información Actual del Pedido</h4>"
+            for key, value in obj.current_data.items():
+                if value:  # Solo mostrar si tiene valor
+                    field_name = key.replace('_', ' ').title()
+                    html += f"<div style='margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #e9ecef;'>"
+                    html += f"<strong style='color: #212529; display: inline-block; min-width: 120px;'>{field_name}:</strong>"
+                    html += f"<span style='color: #495057; margin-left: 10px;'>{value}</span>"
+                    html += "</div>"
+            html += "</div>"
+            return format_html(html)
+        return format_html('<div style="color: #6c757d; font-style: italic;">Sin datos</div>')
+    current_data_formatted.short_description = 'Datos Actuales del Pedido'
+    
+    def requested_data_formatted(self, obj):
+        """Formatear los datos solicitados de manera legible"""
+        if obj.requested_data:
+            html = "<div style='background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffeaa7; border-left: 4px solid #f39c12;'>"
+            html += "<h4 style='margin: 0 0 10px 0; color: #856404; font-size: 14px;'>🔄 Cambios Solicitados</h4>"
+            for key, value in obj.requested_data.items():
+                if value:  # Solo mostrar si tiene valor
+                    field_name = key.replace('_', ' ').title()
+                    html += f"<div style='margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #f7dc6f;'>"
+                    html += f"<strong style='color: #856404; display: inline-block; min-width: 120px;'>{field_name}:</strong>"
+                    html += f"<span style='color: #6c5ce7; margin-left: 10px; font-weight: 500;'>{value}</span>"
+                    html += "</div>"
+            html += "</div>"
+            return format_html(html)
+        return format_html('<div style="color: #6c757d; font-style: italic;">Sin datos</div>')
+    requested_data_formatted.short_description = 'Cambios Solicitados'
+    
+    def manage_order_status(self, obj):
+        """Gestión rápida del estado del pedido"""
+        if obj.pk:
+            current_status = obj.order.get_status_display()
+            url = reverse('admin:orders_order_change', args=[obj.order.id])
+            
+            # Colores para estados
+            status_colors = {
+                'pending': '#f59e0b',
+                'confirmed': '#3b82f6',
+                'preparing': '#8b5cf6',
+                'ready': '#f97316',
+                'delivered': '#10b981',
+                'cancelled': '#ef4444',
+                'modification_requested': '#ec4899'
+            }
+            
+            color = status_colors.get(obj.order.status, '#6b7280')
+            
+            html = f'''
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 6px; border: 1px solid #dee2e6;">
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #495057;">Estado actual del pedido:</strong>
+                    <span style="color: {color}; font-weight: bold; margin-left: 8px;">
+                        {current_status}
+                    </span>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <a href="{url}" 
+                       style="display: inline-block; padding: 8px 16px; background: #007cba; color: white; text-decoration: none; border-radius: 4px; font-size: 13px; text-align: center;"
+                       target="_blank">
+                        🔧 Gestionar Estado del Pedido
+                    </a>
+                </div>
+            </div>
+            '''
+            
+            return format_html(html)
+        return format_html('<div style="color: #6c757d; font-style: italic;">Guarda primero para gestionar el estado</div>')
+    manage_order_status.short_description = 'Gestión de Estado'
+    
+    def get_readonly_fields(self, request, obj=None):
+        """Hacer ciertos campos de solo lectura"""
+        readonly = list(self.readonly_fields)
+        if obj:  # Si es edición
+            readonly.extend(['order', 'requested_by', 'modification_type', 'current_data', 'requested_data', 'reason'])
+        return readonly
 
 @admin.register(BusinessSettings)
 class BusinessSettingsAdmin(ModelAdmin):

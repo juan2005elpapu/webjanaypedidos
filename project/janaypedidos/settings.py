@@ -176,7 +176,7 @@ UNFOLD = {
         },
     ],
     "LOGIN": {
-        "image": lambda request: static("images/coffe_beans.jpg"),
+        "image": lambda request: static("images/coffee_beans.jpg"),
     },
 
     # Colores - Paleta Naranja

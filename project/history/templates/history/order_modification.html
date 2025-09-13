@@ -1,0 +1,353 @@
+{% extends "core/base_dashboard.html" %}
+{% load humanize %}
+
+{% block title %}{{ title }} | Janay Pedidos{% endblock %}
+
+{% block main_content %}
+{% csrf_token %}
+
+<div class="mb-4 md:mb-6">
+    <div class="flex flex-col space-y-3 md:flex-row md:items-center md:justify-between md:space-y-0">
+        <div>
+            <h1 class="text-xl md:text-2xl font-semibold text-gray-900">Modificar Pedido #{{ order.order_number }}</h1>
+            <p class="text-sm md:text-base text-gray-600">Solicita cambios en tu pedido</p>
+        </div>
+        <a href="{% url 'history:order_detail' order.id %}" class="inline-flex items-center px-3 py-2 md:px-4 bg-black text-white border border-black rounded-md text-sm font-medium hover:bg-white hover:text-black hover:border-black transition-colors duration-200 w-fit">
+            <span class="material-icons mr-2 text-lg md:text-base">arrow_back</span>
+            <span class="hidden sm:inline">Volver al pedido</span>
+            <span class="sm:hidden">Volver</span>
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+    <!-- Información actual del pedido -->
+    <div class="lg:col-span-2 space-y-4 md:space-y-6">
+        <!-- Resumen del pedido actual -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Información Actual del Pedido</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-gray-700">Cliente:</span>
+                        <span class="ml-2 text-gray-900">{{ order.customer_name }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">Teléfono:</span>
+                        <span class="ml-2 text-gray-900">{{ order.customer_phone }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">Fecha deseada:</span>
+                        <span class="ml-2 text-gray-900">{{ order.desired_date|date:"d/m/Y" }} - {{ order.desired_time|time:"H:i" }}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">Tipo de entrega:</span>
+                        <span class="ml-2 text-gray-900">
+                            {% if order.delivery_type == 'delivery' %}Delivery{% else %}Recoger en tienda{% endif %}
+                        </span>
+                    </div>
+                    {% if order.delivery_type == 'delivery' and order.delivery_address %}
+                    <div class="md:col-span-2">
+                        <span class="font-medium text-gray-700">Dirección:</span>
+                        <span class="ml-2 text-gray-900">{{ order.delivery_address }}</span>
+                        {% if order.delivery_neighborhood %}
+                            <br><span class="ml-6 text-gray-600">Barrio: {{ order.delivery_neighborhood }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if order.notes %}
+                    <div class="md:col-span-2">
+                        <span class="font-medium text-gray-700">Notas actuales:</span>
+                        <span class="ml-2 text-gray-900">{{ order.notes }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Productos del pedido (solo lectura) -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Productos en el Pedido</h3>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start">
+                        <span class="material-icons text-blue-500 mr-2">info</span>
+                        <div class="text-sm text-blue-700">
+                            <p class="font-medium">Nota importante:</p>
+                            <p>Las cantidades de productos no se pueden modificar. Solo puedes solicitar cambios en información de entrega, fechas, horarios, direcciones o notas especiales.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-hidden border border-gray-200 rounded-md">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Producto
+                                    </th>
+                                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Cantidad
+                                    </th>
+                                    <th class="px-4 md:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Total
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for item in order.items.all %}
+                                    <tr>
+                                        <td class="px-4 md:px-6 py-4">
+                                            <div class="flex items-center">
+                                                {% if item.product.image %}
+                                                    <div class="flex-shrink-0 h-8 w-8 md:h-10 md:w-10">
+                                                        <img class="h-8 w-8 md:h-10 md:w-10 rounded-full object-cover" src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
+                                                    </div>
+                                                {% endif %}
+                                                <div class="ml-3 md:ml-4">
+                                                    <div class="text-sm font-medium text-gray-900">{{ item.product.name }}</div>
+                                                    <div class="text-xs md:text-sm text-gray-500">{{ item.product.category.name }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 md:px-6 py-4 text-sm text-gray-900">
+                                            {{ item.quantity }}
+                                        </td>
+                                        <td class="px-4 md:px-6 py-4 text-sm text-gray-900">
+                                            ${{ item.total_price|floatformat:0|intcomma }}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario de modificación -->
+    <div class="space-y-4 md:space-y-6">
+        <!-- Formulario -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Solicitar Modificación</h3>
+                
+                <!-- ✅ OPCIONAL: Mostrar historial de la última solicitud -->
+                {% if latest_request %}
+                <div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                    <div class="flex items-start">
+                        <span class="material-icons text-blue-500 mr-2 text-sm">history</span>
+                        <div class="text-xs text-blue-700">
+                            <p class="font-medium">Última solicitud:</p>
+                            <p>{{ latest_request.modification_type|title }} - {{ latest_request.created_at|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <form id="modification-form" class="space-y-4">
+                    <!-- ✅ AGREGAR: Campo para tipo de modificación -->
+                    <div>
+                        <label for="modification_type" class="block text-sm font-medium text-gray-900 mb-2 ">
+                            Tipo de modificación <span class="text-gray-500">(opcional)</span>
+                        </label>
+                        <select 
+                            id="modification_type" 
+                            name="modification_type" 
+                            class="block w-full border-2 rounded-md shadow-sm p-3 text-sm border-orange-300 focus:ring-orange-500 focus:border-orange-500  bg-orange-50/30 transition-colors duration-200">
+                            <option value="">Seleccionar tipo (opcional)</option>
+                            <option value="cambio_fecha">Cambio de fecha</option>
+                            <option value="cambio_hora">Cambio de hora</option>
+                            <option value="cambio_direccion">Cambio de dirección</option>
+                            <option value="cambio_tipo_entrega">Cambio tipo de entrega</option>
+                            <option value="agregar_notas">Agregar notas especiales</option>
+                            <option value="cambio_contacto">Cambio de información de contacto</option>
+                            <option value="general">General</option>
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">Si no seleccionas nada, se marcará como "General"</p>
+                    </div>
+
+                    <div>
+                        <label for="modification_details" class="block text-sm font-medium text-gray-900 mb-3">
+                            <span class="text-base">¿Qué cambios necesitas en tu pedido?</span>
+                            <span class="text-red-500 ml-1">*</span>
+                        </label>
+                        <div class="relative">
+                            <textarea 
+                                id="modification_details" 
+                                name="modification_details" 
+                                rows="8" 
+                                class="block w-full border-2 border-orange-300 rounded-lg shadow-sm p-4 text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-colors duration-200 bg-orange-50/30" 
+                                placeholder="Describe detalladamente qué cambios necesitas en tu pedido:
+
+• Cambiar fecha de entrega (especifica la nueva fecha)
+• Modificar dirección de entrega
+• Cambiar horario de entrega
+• Agregar notas especiales o instrucciones
+• Cambiar tipo de entrega (delivery ↔ recoger en tienda)
+• Otros cambios...
+
+Ejemplo: 'Necesito cambiar la fecha de entrega del 15/09 al 20/09 porque tengo un viaje. También agregar que toquen el timbre 2 veces.'"
+                                required></textarea>
+                        </div>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        id="submit-btn"
+                        class="w-full inline-flex items-center justify-center px-6 py-4 border border-transparent text-base font-medium rounded-lg text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 transition-all duration-200 shadow-lg hover:shadow-xl">
+                        <span class="material-icons mr-2 text-lg">send</span>
+                        Enviar Solicitud de Modificación
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Información sobre modificaciones -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Información Importante</h3>
+                <div class="text-sm text-gray-600 space-y-3">
+                    <div class="flex items-start">
+                        <span class="material-icons text-blue-500 mr-2 mt-0.5 text-base">schedule</span>
+                        <div>
+                            <p class="font-medium text-gray-900">Tiempo límite</p>
+                            <p>Las modificaciones solo se pueden solicitar hasta 4 horas antes de la entrega.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <span class="material-icons text-purple-500 mr-2 mt-0.5 text-base">phone</span>
+                        <div>
+                            <p class="font-medium text-gray-900">Contacto</p>
+                            <p>Para cambios urgentes, también puedes llamarnos directamente.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Resumen del pedido -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-4 py-5 sm:p-6">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Resumen del Pedido</h3>
+                <dl class="space-y-3 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Subtotal</dt>
+                        <dd class="font-medium text-gray-900">${{ order.subtotal|floatformat:0|intcomma }}</dd>
+                    </div>
+                    {% if order.delivery_type == 'delivery' %}
+                        <div class="flex justify-between">
+                            <dt class="text-gray-600">Envío</dt>
+                            <dd class="font-medium text-gray-900">
+                                {% if order.shipping_cost == 0 %}
+                                    <span class="text-green-600">¡Gratis!</span>
+                                {% else %}
+                                    ${{ order.shipping_cost|floatformat:0|intcomma }}
+                                {% endif %}
+                            </dd>
+                        </div>
+                    {% endif %}
+                    <div class="border-t border-gray-200 pt-3 flex justify-between">
+                        <dt class="text-base font-medium text-gray-900">Total Final</dt>
+                        <dd class="text-base font-bold text-orange-600">${{ order.total|floatformat:0|intcomma }}</dd>
+                    </div>
+                    <div class="pt-2 border-t border-gray-100">
+                        <div class="flex justify-between">
+                            <dt class="text-gray-600">Estado</dt>
+                            <dd>
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    {% if order.status == 'pending' %}bg-yellow-100 text-yellow-800
+                                    {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-800
+                                    {% elif order.status == 'preparing' %}bg-purple-100 text-purple-800
+                                    {% elif order.status == 'ready' %}bg-orange-100 text-orange-800
+                                    {% elif order.status == 'delivered' %}bg-green-100 text-green-800
+                                    {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
+                                    {% elif order.status == 'in_transit' %}bg-indigo-100 text-indigo-800
+                                    {% elif order.status == 'modification_requested' %}bg-pink-100 text-pink-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ order.get_status_display }}
+                                </span>
+                            </dd>
+                        </div>
+                        <div class="flex justify-between mt-2">
+                            <dt class="text-gray-600">Método de pago</dt>
+                            <dd class="text-gray-900">{{ order.get_payment_method_display }}</dd>
+                        </div>
+                    </div>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('modification-form')?.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = document.getElementById('submit-btn');
+    const textarea = document.getElementById('modification_details');
+    const typeSelect = document.getElementById('modification_type');
+    const modificationDetails = textarea.value.trim();
+    const modificationType = typeSelect.value || 'general'; // ✅ Default a 'general'
+    
+    if (!modificationDetails) {
+        alert('Por favor, especifica los detalles de la modificación.');
+        textarea.focus();
+        return;
+    }
+    
+    // Mostrar loading
+    submitBtn.innerHTML = '<span class="material-icons animate-spin mr-2">refresh</span>Enviando solicitud...';
+    submitBtn.disabled = true;
+    
+    // Obtener CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    
+    if (!csrfToken) {
+        console.error('CSRF token no encontrado');
+        alert('Error de seguridad. Por favor recarga la página.');
+        submitBtn.innerHTML = '<span class="material-icons mr-2 text-base">send</span>Enviar Solicitud de Modificación';
+        submitBtn.disabled = false;
+        return;
+    }
+    
+    // ✅ CAMBIO: Incluir modification_type en el JSON
+    fetch(`/history/{{ order.id }}/submit-modification/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            'modification_details': modificationDetails,
+            'modification_type': modificationType
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert('Solicitud de modificación enviada exitosamente. Te contactaremos pronto.');
+            window.location.href = "{% url 'history:order_detail' order.id %}";
+        } else {
+            alert(data.message || 'Error al enviar la solicitud de modificación');
+            submitBtn.innerHTML = '<span class="material-icons mr-2 text-base">send</span>Enviar Solicitud de Modificación';
+            submitBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al enviar la solicitud: ' + error.message);
+        submitBtn.innerHTML = '<span class="material-icons mr-2 text-base">send</span>Enviar Solicitud de Modificación';
+        submitBtn.disabled = false;
+    });
+});
+</script>
+{% endblock %}
