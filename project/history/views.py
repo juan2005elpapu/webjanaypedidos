@@ -161,30 +161,29 @@ def _can_cancel_order(order):
     Función auxiliar para verificar si un pedido se puede cancelar.
     Reglas:
     1. No debe estar cancelado o entregado
-    2. No debe estar en preparación o listo
+    2. No debe estar en preparación, listo o en camino
     3. Debe haber mínimo 24 horas hasta la entrega
+    4. ✅ CAMBIO: No bloquear por modificaciones si está confirmado
     """
     
     # Verificar estados que no permiten cancelación
-    if order.status in ['cancelled', 'delivered', 'preparing', 'ready']:
+    if order.status in ['cancelled', 'delivered', 'preparing', 'ready', 'in_delivery']:
+        return False
+    
+    # ✅ CAMBIO: Solo bloquear si está en modification_requested, no si está confirmado con historial de modificaciones
+    if order.status == 'modification_requested':
         return False
     
     # Combinar fecha y hora de entrega deseada
     try:
-        # Crear datetime combinando fecha y hora deseadas
-        delivery_datetime = datetime.combine(order.desired_date, order.desired_time)
+        delivery_datetime = timezone.datetime.combine(order.desired_date, order.desired_time)
+        delivery_datetime = timezone.make_aware(delivery_datetime)
         
-        # Obtener datetime actual
-        now = datetime.now()
-        
-        # Calcular diferencia
-        time_until_delivery = delivery_datetime - now
-        
-        # Verificar si hay al menos 24 horas (1 día)
-        return time_until_delivery.total_seconds() >= 24 * 60 * 60  # 24 horas en segundos
+        # Verificar que falten al menos 24 horas
+        now = timezone.now()
+        return delivery_datetime > now + timezone.timedelta(hours=24)
         
     except Exception:
-        # Si hay algún error en el cálculo, por seguridad no permitir cancelación
         return False
 
 @login_required

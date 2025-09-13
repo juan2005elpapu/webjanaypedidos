@@ -256,21 +256,6 @@ Ejemplo: 'Necesito cambiar la fecha de entrega del 15/09 al 20/09 porque tengo u
                     </div>
                     <div class="pt-2 border-t border-gray-100">
                         <div class="flex justify-between">
-                            <dt class="text-gray-600">Estado</dt>
-                            <dd>
-                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                    {% if order.status == 'pending' %}bg-yellow-100 text-yellow-800
-                                    {% elif order.status == 'confirmed' %}bg-blue-100 text-blue-800
-                                    {% elif order.status == 'preparing' %}bg-purple-100 text-purple-800
-                                    {% elif order.status == 'ready' %}bg-orange-100 text-orange-800
-                                    {% elif order.status == 'delivered' %}bg-green-100 text-green-800
-                                    {% elif order.status == 'cancelled' %}bg-red-100 text-red-800
-                                    {% elif order.status == 'in_transit' %}bg-indigo-100 text-indigo-800
-                                    {% elif order.status == 'modification_requested' %}bg-pink-100 text-pink-800
-                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                    {{ order.get_status_display }}
-                                </span>
-                            </dd>
                         </div>
                         <div class="flex justify-between mt-2">
                             <dt class="text-gray-600">Método de pago</dt>
