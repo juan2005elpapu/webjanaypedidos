@@ -5,3 +5,4 @@ media/
 static/
 env/
 env.py
+staticfiles/
