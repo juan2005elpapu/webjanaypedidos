@@ -6,3 +6,5 @@ static/
 env/
 env.py
 staticfiles/
+migrations/
+styles.css

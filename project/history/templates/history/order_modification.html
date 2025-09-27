@@ -214,15 +214,33 @@ Ejemplo: 'Necesito cambiar la fecha de entrega del 15/09 al 20/09 porque tengo u
                         <span class="material-icons text-blue-500 mr-2 mt-0.5 text-base">schedule</span>
                         <div>
                             <p class="font-medium text-gray-900">Tiempo límite</p>
-                            <p>Las modificaciones solo se pueden solicitar hasta 4 horas antes de la entrega.</p>
+                            <!-- ✅ CAMBIO: Resaltar tiempo con negrilla -->
+                            <p>Las modificaciones solo se pueden solicitar hasta <span class="font-bold text-gray-900">{{ settings.modification_time_limit_hours }} hora{{ settings.modification_time_limit_hours|pluralize:"s" }}</span> antes de la entrega.</p>
                         </div>
                     </div>
                     
                     <div class="flex items-start">
-                        <span class="material-icons text-purple-500 mr-2 mt-0.5 text-base">phone</span>
+                        <span class="material-icons text-purple-500 mr-2 mt-0.5 text-base">notifications</span>
                         <div>
                             <p class="font-medium text-gray-900">Contacto</p>
-                            <p>Para cambios urgentes, también puedes llamarnos directamente.</p>
+                            <!-- ✅ CAMBIO: Usar información de configuración -->
+                            <p>Para cambios urgentes, también puedes contactarnos:</p>
+                            <div class="mt-2 space-y-1">
+                                <p class="flex items-center text-xs">
+                                    <span class="material-icons text-sm mr-1 text-orange-500">phone</span>
+                                    <a href="tel:{{ settings.contact_phone }}" class="text-blue-600 hover:text-blue-800 font-medium">{{ settings.contact_phone }}</a>
+                                </p>
+                                <p class="flex items-center text-xs">
+                                    <span class="material-icons text-sm mr-1 text-orange-500">email</span>
+                                    <a href="mailto:{{ settings.contact_email }}" class="text-blue-600 hover:text-blue-800 font-medium">{{ settings.contact_email }}</a>
+                                </p>
+                                {% if settings.whatsapp_number %}
+                                <p class="flex items-center text-xs">
+                                    <span class="material-icons text-sm mr-1 text-orange-500">chat</span>
+                                    <a href="https://wa.me/{{ settings.whatsapp_number|cut:'+' }}" target="_blank" class="text-green-600 hover:text-green-800 font-medium">WhatsApp</a>
+                                </p>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                 </div>

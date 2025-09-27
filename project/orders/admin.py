@@ -96,7 +96,6 @@ class OrderModificationRequestAdmin(ModelAdmin):
     list_filter = ('modification_type', 'order__status', 'created_at')
     search_fields = ('order__order_number', 'order__customer_name', 'reason')
     
-    # ✅ CORREGIR: Agregar los métodos personalizados a readonly_fields
     readonly_fields = (
         'created_at', 'reviewed_at', 'order_link', 
         'current_data_formatted', 'requested_data_formatted', 'manage_order_status'
@@ -121,9 +120,46 @@ class OrderModificationRequestAdmin(ModelAdmin):
             'fields': ('admin_response', 'reviewed_by', 'reviewed_at'),
         }),
     )
+
+    def get_queryset(self, request):
+        """
+        ✅ FILTRAR: Solo mostrar solicitudes de pedidos con estado 'modification_requested'
+        y solo la más reciente de cada pedido
+        """
+        qs = super().get_queryset(request)
+        
+        # Filtrar solo pedidos con estado 'modification_requested'
+        qs = qs.filter(order__status='modification_requested')
+        
+        # Para cada pedido, obtener solo la solicitud más reciente
+        # Esto se hace con una subconsulta que agrupa por order y toma el max(id)
+        from django.db.models import Max
+        
+        # Obtener el ID más reciente de cada pedido con estado modification_requested
+        latest_requests_ids = (
+            qs.values('order')
+            .annotate(latest_id=Max('id'))
+            .values_list('latest_id', flat=True)
+        )
+        
+        # Filtrar solo esos IDs
+        qs = qs.filter(id__in=latest_requests_ids)
+        
+        return qs.order_by('-created_at')
+    
+    # ✅ AGREGAR: Método para mostrar contador en el admin
+    def changelist_view(self, request, extra_context=None):
+        """Agregar contexto adicional para mostrar información útil"""
+        extra_context = extra_context or {}
+        
+        # Contar pedidos con modificaciones pendientes
+        total_pending = Order.objects.filter(status='modification_requested').count()
+        extra_context['subtitle'] = f"Mostrando {total_pending} pedido{'s' if total_pending != 1 else ''} con modificaciones pendientes"
+        
+        return super().changelist_view(request, extra_context=extra_context)
     
     def order_info(self, obj):
-        """Mostrar información básica del pedido (NO clickeable para ver modificación)"""
+        """Mostrar información básica del pedido"""
         return f"{obj.order.order_number} - {obj.order.customer_name}"
     order_info.short_description = 'Información del Pedido'
     
@@ -240,9 +276,27 @@ class OrderModificationRequestAdmin(ModelAdmin):
             readonly.extend(['order', 'requested_by', 'modification_type', 'current_data', 'requested_data', 'reason'])
         return readonly
 
+    # ✅ OPCIONAL: Agregar acción masiva para aprobar modificaciones
+    def approve_modifications(self, request, queryset):
+        """Acción para aprobar múltiples modificaciones de una vez"""
+        count = 0
+        for modification in queryset:
+            if modification.order.status == 'modification_requested':
+                modification.order.status = 'confirmed'
+                modification.order.save()
+                count += 1
+        
+        self.message_user(
+            request,
+            f"{count} solicitud{'es' if count != 1 else ''} aprobada{'s' if count != 1 else ''} y pedido{'s' if count != 1 else ''} confirmado{'s' if count != 1 else ''}."
+        )
+    approve_modifications.short_description = "Aprobar modificaciones seleccionadas"
+    
+    actions = ['approve_modifications']
+
 @admin.register(BusinessSettings)
 class BusinessSettingsAdmin(ModelAdmin):
-    list_display = ('business_name', 'contact_email', 'minimum_order_amount', 'free_delivery_threshold', 'delivery_cost')  # ✅ AGREGAR delivery_cost
+    list_display = ('business_name', 'contact_email', 'minimum_order_amount', 'free_delivery_threshold', 'delivery_cost')
     
     fieldsets = (
         ('Información del Negocio', {
@@ -252,7 +306,12 @@ class BusinessSettingsAdmin(ModelAdmin):
             'fields': ('contact_email', 'contact_phone', 'whatsapp_number')
         }),
         ('Configuración de Pedidos', {
-            'fields': ('minimum_order_amount', 'free_delivery_threshold', 'delivery_cost', 'min_advance_days', 'max_advance_days')  # ✅ AGREGAR delivery_cost
+            'fields': ('minimum_order_amount', 'free_delivery_threshold', 'delivery_cost', 'min_advance_days', 'max_advance_days')
+        }),
+        # ✅ AGREGAR: Nueva sección para tiempos de modificación y cancelación
+        ('Tiempos Límite', {
+            'fields': ('modification_time_limit_hours', 'cancellation_time_limit_days'),
+            'description': 'Configure los tiempos límite para modificaciones y cancelaciones de pedidos'
         }),
         ('Horarios', {
             'fields': ('delivery_start_time', 'delivery_end_time')

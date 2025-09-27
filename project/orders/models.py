@@ -141,25 +141,26 @@ class Order(models.Model):
     def can_be_modified(self):
         """
         Verifica si el pedido puede ser modificado.
-        Solo se puede modificar hasta 4 horas antes de la entrega,
+        Solo se puede modificar hasta X horas antes de la entrega (configurado en BusinessSettings),
         y únicamente si está en estado 'confirmed'.
         """
         if self.status in ['cancelled', 'delivered']:
             return False
         
-        # ✅ CAMBIO: Solo puede modificar si está confirmado
+        # Solo puede modificar si está confirmado
         if self.status != 'confirmed':
             return False
             
-        # ✅ ELIMINAR: Ya no verificamos solicitudes de modificación
-        # El estado del pedido es suficiente para controlar esto
-            
-        # Verificar que no sea muy cerca de la entrega (4 horas antes)
+        # ✅ CAMBIO: Usar configuración de BusinessSettings
+        settings = BusinessSettings.get_settings()
+        modification_hours_limit = settings.modification_time_limit_hours
+        
+        # Verificar que no sea muy cerca de la entrega
         now = timezone.now()
         delivery_datetime = timezone.datetime.combine(self.desired_date, self.desired_time)
         delivery_datetime = timezone.make_aware(delivery_datetime)
         
-        return delivery_datetime > now + timezone.timedelta(hours=4)
+        return delivery_datetime > now + timezone.timedelta(hours=modification_hours_limit)
     
     @property
     def meets_minimum_order(self):
@@ -310,6 +311,18 @@ class BusinessSettings(models.Model):
     min_advance_days = models.PositiveIntegerField(default=2, verbose_name='Días mínimos de anticipación')
     max_advance_days = models.PositiveIntegerField(default=90, verbose_name='Días máximos de anticipación')
     
+    # ✅ AGREGAR: Nuevos campos para tiempos de modificación y cancelación
+    modification_time_limit_hours = models.PositiveIntegerField(
+        default=4, 
+        verbose_name='Tiempo límite para modificaciones (horas)',
+        help_text='Horas antes de la entrega hasta cuando se pueden solicitar modificaciones'
+    )
+    cancellation_time_limit_days = models.PositiveIntegerField(
+        default=1, 
+        verbose_name='Tiempo límite para cancelaciones (días)',
+        help_text='Días antes de la entrega hasta cuando se pueden cancelar pedidos'
+    )
+    
     # Información de contacto
     business_name = models.CharField(max_length=100, default='Janay', verbose_name='Nombre del negocio')
     contact_email = models.EmailField(verbose_name='Email de contacto')
@@ -354,6 +367,8 @@ class BusinessSettings(models.Model):
                 address='Villanueva, Casanare, Colombia',
                 city='Villanueva',
                 department='Casanare',
-                delivery_cost=Decimal('5000')
+                delivery_cost=Decimal('5000'),
+                modification_time_limit_hours=4,  # ✅ AGREGAR valores por defecto
+                cancellation_time_limit_days=1
             )
         return settings

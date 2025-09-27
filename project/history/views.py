@@ -162,26 +162,30 @@ def _can_cancel_order(order):
     Reglas:
     1. No debe estar cancelado o entregado
     2. No debe estar en preparación, listo o en camino
-    3. Debe haber mínimo 24 horas hasta la entrega
-    4. ✅ CAMBIO: No bloquear por modificaciones si está confirmado
+    3. Debe haber mínimo X días hasta la entrega (configurado en BusinessSettings)
+    4. No bloquear por modificaciones si está confirmado
     """
     
     # Verificar estados que no permiten cancelación
     if order.status in ['cancelled', 'delivered', 'preparing', 'ready', 'in_delivery']:
         return False
     
-    # ✅ CAMBIO: Solo bloquear si está en modification_requested, no si está confirmado con historial de modificaciones
+    # Solo bloquear si está en modification_requested, no si está confirmado con historial de modificaciones
     if order.status == 'modification_requested':
         return False
+    
+    # ✅ CAMBIO: Usar configuración de BusinessSettings
+    settings = BusinessSettings.get_settings()
+    cancellation_days_limit = settings.cancellation_time_limit_days
     
     # Combinar fecha y hora de entrega deseada
     try:
         delivery_datetime = timezone.datetime.combine(order.desired_date, order.desired_time)
         delivery_datetime = timezone.make_aware(delivery_datetime)
         
-        # Verificar que falten al menos 24 horas
+        # Verificar que falten al menos X días configurados
         now = timezone.now()
-        return delivery_datetime > now + timezone.timedelta(hours=24)
+        return delivery_datetime > now + timezone.timedelta(days=cancellation_days_limit)
         
     except Exception:
         return False
@@ -245,17 +249,20 @@ def cancel_order(request, order_id):
 def modify_order(request, order_id):
     order = get_object_or_404(Order, id=order_id, user=request.user)
     
-    # ✅ SIMPLIFICAR: Solo verificar estado y tiempo
+    # ✅ AGREGAR: Obtener configuraciones
+    settings = BusinessSettings.get_settings()
+    
+    # Verificar estado y tiempo usando las configuraciones
     if order.status != 'confirmed':
         messages.error(request, 'Solo se pueden modificar pedidos que estén confirmados.')
         return redirect('history:order_detail', order_id=order_id)
     
     # Verificar si el pedido puede ser modificado (tiempo)
     if not order.can_be_modified:
-        messages.error(request, 'Este pedido ya no puede ser modificado (muy cerca de la entrega).')
+        messages.error(request, f'Este pedido ya no puede ser modificado (muy cerca de la entrega - límite: {settings.modification_time_limit_hours} horas).')
         return redirect('history:order_detail', order_id=order_id)
     
-    # ✅ AGREGAR: Obtener la última solicitud para mostrar historial (opcional)
+    # Obtener la última solicitud para mostrar historial (opcional)
     latest_request = OrderModificationRequest.objects.filter(
         order=order
     ).order_by('-created_at').first()
@@ -263,7 +270,8 @@ def modify_order(request, order_id):
     context = {
         'title': f'Modificar Pedido #{order.order_number}',
         'order': order,
-        'latest_request': latest_request,  # Para mostrar historial si se desea
+        'latest_request': latest_request,
+        'settings': settings,  # ✅ AGREGAR settings al contexto
     }
     return render(request, 'history/order_modification.html', context)
 
@@ -272,19 +280,20 @@ def modify_order(request, order_id):
 def submit_modification(request, order_id):
     try:
         order = get_object_or_404(Order, id=order_id, user=request.user)
+        settings = BusinessSettings.get_settings()  # ✅ AGREGAR
         
-        # ✅ VERIFICAR: Solo estado del pedido
+        # Verificar: Solo estado del pedido
         if order.status != 'confirmed':
             return JsonResponse({
                 'success': False,
                 'message': 'Solo se pueden modificar pedidos confirmados.'
             })
         
-        # Verificar tiempo límite
+        # Verificar tiempo límite usando configuraciones
         if not order.can_be_modified:
             return JsonResponse({
                 'success': False,
-                'message': 'Este pedido ya no puede ser modificado (muy cerca de la entrega).'
+                'message': f'Este pedido ya no puede ser modificado (muy cerca de la entrega - límite: {settings.modification_time_limit_hours} horas).'
             })
         
         data = json.loads(request.body)
@@ -297,7 +306,7 @@ def submit_modification(request, order_id):
                 'message': 'Por favor, especifica los detalles de la modificación.'
             })
         
-        # ✅ SIEMPRE crear nueva solicitud de modificación
+        # Crear nueva solicitud de modificación
         modification_request = OrderModificationRequest.objects.create(
             order=order,
             requested_by=request.user,
@@ -319,13 +328,13 @@ def submit_modification(request, order_id):
             reason=modification_details
         )
         
-        # ✅ CAMBIAR estado del pedido a 'modification_requested'
+        # Cambiar estado del pedido a 'modification_requested'
         order.status = 'modification_requested'
         order.save()
         
         return JsonResponse({
             'success': True,
-            'message': 'Solicitud de modificación enviada exitosamente. Te contactaremos pronto.'
+            'message': f'Solicitud de modificación enviada exitosamente. Te contactaremos pronto al {settings.contact_phone} o {settings.contact_email}.'
         })
         
     except Exception as e:
