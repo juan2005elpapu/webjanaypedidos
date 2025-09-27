@@ -8,3 +8,4 @@ env.py
 staticfiles/
 migrations/
 styles.css
+theme/
