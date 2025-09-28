@@ -491,14 +491,27 @@ def wompi_checkout(request, order_id):
     env = get_wompi_base_url(settings_obj.wompi_environment)
     acceptance_data = {}
     acceptance_error = None
+    acceptance_token = None
+    terms_link = None
+
+    public_key = (settings_obj.wompi_public_key or '').strip()
 
     try:
         acceptance_data = get_acceptance_information(
-            settings_obj.wompi_public_key,
+            public_key,
             settings_obj.wompi_environment,
         )
     except WompiAPIError as exc:
         acceptance_error = str(exc)
+    else:
+        presigned = acceptance_data.get('presigned_acceptance') or {}
+        acceptance_token = presigned.get('acceptance_token') or None
+        terms_link = presigned.get('permalink')
+        if not acceptance_token and not acceptance_error:
+            acceptance_error = (
+                'No fue posible obtener el token de aceptación de Wompi. '
+                'Por favor intenta nuevamente en unos minutos.'
+            )
 
     order.refresh_from_db()
     total_amount = (order.total or Decimal('0')).quantize(Decimal('0.01'))
@@ -520,16 +533,21 @@ def wompi_checkout(request, order_id):
         'order': order,
         'settings': settings_obj,
         'environment': env,
+        'widget_js_url': env.widget_js_url,
         'amount_in_cents': amount_in_cents,
         'amount_formatted': f"{total_amount:.2f}",
         'reference': reference,
-        'public_key': settings_obj.wompi_public_key,
+        'public_key': public_key,
         'redirect_url': redirect_url,
         'acceptance_data': acceptance_data,
         'acceptance_error': acceptance_error,
-        'terms_link': acceptance_data.get('presigned_acceptance', {}).get('permalink'),
+        'acceptance_token': acceptance_token,
+        'terms_link': terms_link,
         'integrity_signature': integrity_signature,
         'integrity_signature_payload': signature_payload,
+        'customer_email': (order.customer_email or '').strip(),
+        'customer_phone': (order.customer_phone or '').strip(),
+        'customer_name': (order.customer_name or '').strip(),
     }
 
     return render(request, 'orders/wompi_checkout.html', context)
@@ -554,12 +572,14 @@ def wompi_result(request, order_id):
     error_message = None
 
     if transaction_id:
+        public_key = (settings_obj.wompi_public_key or '').strip()
+        private_key = (settings_obj.wompi_private_key or '').strip()
         try:
             transaction_data = get_transaction_information(
                 transaction_id,
                 settings_obj.wompi_environment,
-                public_key=settings_obj.wompi_public_key,
-                private_key=settings_obj.wompi_private_key,
+                public_key=public_key,
+                private_key=private_key,
             )
             transaction_status = transaction_data.get('status')
             amount_in_cents = transaction_data.get('amount_in_cents')

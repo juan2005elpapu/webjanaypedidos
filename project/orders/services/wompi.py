@@ -14,10 +14,10 @@ class WompiAPIError(Exception):
 
 @dataclass
 class WompiEnvironment:
-    """Representa las URLs base según el entorno configurado."""
+    """Representa la configuración base según el entorno."""
 
     api_url: str
-    checkout_domain: str
+    widget_js_url: str
 
 
 def get_wompi_base_url(environment: str) -> WompiEnvironment:
@@ -27,11 +27,11 @@ def get_wompi_base_url(environment: str) -> WompiEnvironment:
     if environment == 'production':
         return WompiEnvironment(
             api_url='https://production.wompi.co',
-            checkout_domain='prod',
+            widget_js_url='https://checkout.wompi.co/widget.js',
         )
     return WompiEnvironment(
         api_url='https://sandbox.wompi.co',
-        checkout_domain='test',
+        widget_js_url='https://sandbox.checkout.wompi.co/widget.js',
     )
 
 
@@ -58,6 +58,7 @@ def _perform_get(url: str, *, headers: Optional[Dict[str, str]] = None) -> Dict[
 def get_acceptance_information(public_key: str, environment: str) -> Dict[str, Any]:
     """Obtiene información de aceptación (términos y token) para el comercio."""
 
+    public_key = (public_key or '').strip()
     if not public_key:
         raise WompiAPIError('No se configuró la llave pública de Wompi.')
 
@@ -75,12 +76,13 @@ def get_transaction_information(
 ) -> Dict[str, Any]:
     """Consulta el estado de una transacción específica."""
 
+    transaction_id = (transaction_id or '').strip()
     if not transaction_id:
         raise WompiAPIError('No se proporcionó el identificador de la transacción.')
 
     env = get_wompi_base_url(environment)
     headers: Dict[str, str] = {}
-    token = private_key or public_key
+    token = (private_key or public_key or '').strip()
     if token:
         headers['Authorization'] = f'Bearer {token}'
 

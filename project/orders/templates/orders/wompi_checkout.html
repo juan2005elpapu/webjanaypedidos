@@ -70,7 +70,7 @@
 
 {% block dashboard_js %}
 {{ block.super }}
-<script src="https://checkout.wompi.co/widget.js"></script>
+<script src="{{ widget_js_url }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const payButton = document.getElementById('wompi-pay-btn');
@@ -84,10 +84,13 @@
             reference: '{{ reference|escapejs }}',
             publicKey: '{{ public_key|escapejs }}',
             redirectUrl: '{{ redirect_url|escapejs }}',
-            acceptanceToken: {% if acceptance_data.presigned_acceptance.acceptance_token %}'{{ acceptance_data.presigned_acceptance.acceptance_token|escapejs }}'{% else %}null{% endif %},
+            acceptanceToken: {% if acceptance_token %}'{{ acceptance_token|escapejs }}'{% else %}null{% endif %},
             integritySignature: {% if integrity_signature %}'{{ integrity_signature|escapejs }}'{% else %}null{% endif %},
             signaturePayload: {% if integrity_signature_payload %}'{{ integrity_signature_payload|escapejs }}'{% else %}null{% endif %},
-            formattedAmount: '{{ amount_formatted|default:"0.00"|escapejs }}'
+            formattedAmount: '{{ amount_formatted|default:"0.00"|escapejs }}',
+            customerEmail: {% if customer_email %}'{{ customer_email|escapejs }}'{% else %}null{% endif %},
+            customerFullName: {% if customer_name %}'{{ customer_name|escapejs }}'{% else %}null{% endif %},
+            customerPhone: {% if customer_phone %}'{{ customer_phone|escapejs }}'{% else %}null{% endif %}
         };
 
         console.log('Wompi checkout data', wompiConfig);
@@ -96,6 +99,10 @@
             event.preventDefault();
 
             try {
+                if (typeof WidgetCheckout === 'undefined') {
+                    throw new Error('WidgetCheckout no está disponible. Verifica que el script de Wompi cargó correctamente.');
+                }
+
                 const checkoutOptions = {
                     currency: wompiConfig.currency,
                     amountInCents: wompiConfig.amountInCents,
@@ -112,6 +119,20 @@
 
                 if (wompiConfig.acceptanceToken) {
                     checkoutOptions.acceptanceToken = wompiConfig.acceptanceToken;
+                }
+
+                if (wompiConfig.customerEmail || wompiConfig.customerFullName || wompiConfig.customerPhone) {
+                    checkoutOptions.customerData = {};
+
+                    if (wompiConfig.customerEmail) {
+                        checkoutOptions.customerData.email = wompiConfig.customerEmail;
+                    }
+                    if (wompiConfig.customerFullName) {
+                        checkoutOptions.customerData.fullName = wompiConfig.customerFullName;
+                    }
+                    if (wompiConfig.customerPhone) {
+                        checkoutOptions.customerData.phoneNumber = wompiConfig.customerPhone;
+                    }
                 }
 
                 const checkout = new WidgetCheckout(checkoutOptions);
