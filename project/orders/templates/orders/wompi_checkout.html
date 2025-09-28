@@ -130,7 +130,9 @@
             formattedAmount: '{{ amount_formatted|default:"0.00"|escapejs }}',
             customerEmail: {% if customer_email %}'{{ customer_email|escapejs }}'{% else %}null{% endif %},
             customerFullName: {% if customer_name %}'{{ customer_name|escapejs }}'{% else %}null{% endif %},
-            customerPhone: {% if customer_phone %}'{{ customer_phone|escapejs }}'{% else %}null{% endif %}
+            customerPhone: {% if customer_phone %}'{{ customer_phone|escapejs }}'{% else %}null{% endif %},
+            customerPhonePrefix: {% if customer_phone_prefix %}'{{ customer_phone_prefix|escapejs }}'{% else %}null{% endif %},
+            customerPhoneRaw: {% if customer_phone_raw %}'{{ customer_phone_raw|escapejs }}'{% else %}null{% endif %}
         };
 
         console.log('Wompi checkout data', wompiConfig);
@@ -163,18 +165,27 @@
                     checkoutOptions.acceptanceToken = wompiConfig.acceptanceToken;
                 }
 
-                if (wompiConfig.customerEmail || wompiConfig.customerFullName || wompiConfig.customerPhone) {
-                    checkoutOptions.customerData = {};
+                const customerData = {};
 
-                    if (wompiConfig.customerEmail) {
-                        checkoutOptions.customerData.email = wompiConfig.customerEmail;
-                    }
-                    if (wompiConfig.customerFullName) {
-                        checkoutOptions.customerData.fullName = wompiConfig.customerFullName;
-                    }
-                    if (wompiConfig.customerPhone) {
-                        checkoutOptions.customerData.phoneNumber = wompiConfig.customerPhone;
-                    }
+                if (wompiConfig.customerEmail) {
+                    customerData.email = wompiConfig.customerEmail;
+                }
+                if (wompiConfig.customerFullName) {
+                    customerData.fullName = wompiConfig.customerFullName;
+                }
+                if (wompiConfig.customerPhone && wompiConfig.customerPhonePrefix) {
+                    customerData.phoneNumber = wompiConfig.customerPhone;
+                    customerData.phoneNumberPrefix = wompiConfig.customerPhonePrefix;
+                } else if (wompiConfig.customerPhoneRaw) {
+                    console.warn('No se pudo derivar un prefijo válido para el teléfono del cliente.', {
+                        raw: wompiConfig.customerPhoneRaw,
+                        normalized: wompiConfig.customerPhone,
+                        prefix: wompiConfig.customerPhonePrefix,
+                    });
+                }
+
+                if (Object.keys(customerData).length > 0) {
+                    checkoutOptions.customerData = customerData;
                 }
 
                 const checkout = new WidgetCheckout(checkoutOptions);

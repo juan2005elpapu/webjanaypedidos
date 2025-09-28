@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, Tuple
 from urllib import error, request
@@ -105,3 +106,52 @@ __all__ = [
     'get_transaction_information',
     'get_wompi_base_url',
 ]
+
+
+def split_phone_number(
+    phone_number: str,
+    *,
+    default_prefix: str = '57',
+) -> Tuple[Optional[str], Optional[str]]:
+    """Divide un teléfono en prefijo y número para el widget de Wompi."""
+
+    digits = re.sub(r'\D+', '', phone_number or '')
+    if not digits:
+        return None, None
+
+    # Eliminar prefijos internacionales comunes "00"
+    if digits.startswith('00'):
+        digits = digits[2:]
+
+    if not digits:
+        return None, None
+
+    # La integración en Colombia usa "57" como prefijo internacional
+    default_prefix = re.sub(r'\D+', '', default_prefix or '') or '57'
+
+    prefix: Optional[str] = None
+    local_number: Optional[str] = None
+
+    if digits.startswith('57') and len(digits) > 2:
+        prefix = '57'
+        local_number = digits[2:]
+    elif digits.startswith(default_prefix) and len(digits) > len(default_prefix):
+        prefix = default_prefix
+        local_number = digits[len(default_prefix):]
+    else:
+        prefix = default_prefix
+        local_number = digits[-10:] if len(digits) > 10 else digits
+
+    if not local_number:
+        return None, None
+
+    # Asegurar que no existan ceros a la izquierda innecesarios
+    local_number = local_number.lstrip('0') or local_number
+
+    if len(local_number) < 6:  # Wompi requiere al menos 6 dígitos significativos
+        return None, None
+
+    return prefix, local_number
+
+
+__all__.append('split_phone_number')

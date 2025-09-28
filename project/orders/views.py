@@ -19,6 +19,7 @@ from .services import (
     get_acceptance_information,
     get_transaction_information,
     get_wompi_base_url,
+    split_phone_number,
 )
 from products.models import Product, Category
 
@@ -529,6 +530,9 @@ def wompi_checkout(request, order_id):
         signature_payload = f"{reference}{amount_in_cents}COP{integrity_key}"
         integrity_signature = hashlib.sha256(signature_payload.encode('utf-8')).hexdigest()
 
+    customer_phone_raw = (order.customer_phone or '').strip()
+    phone_prefix, phone_number = split_phone_number(customer_phone_raw)
+
     context = {
         'order': order,
         'settings': settings_obj,
@@ -547,7 +551,9 @@ def wompi_checkout(request, order_id):
         'integrity_signature': integrity_signature,
         'integrity_signature_payload': signature_payload,
         'customer_email': (order.customer_email or '').strip(),
-        'customer_phone': (order.customer_phone or '').strip(),
+        'customer_phone': phone_number,
+        'customer_phone_prefix': phone_prefix,
+        'customer_phone_raw': customer_phone_raw,
         'customer_name': (order.customer_name or '').strip(),
     }
 
