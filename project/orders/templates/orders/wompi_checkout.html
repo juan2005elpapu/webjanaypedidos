@@ -1,0 +1,105 @@
+{% extends "core/base_dashboard.html" %}
+{% load humanize %}
+
+{% block title %}Pagar con Wompi | Janay Pedidos{% endblock %}
+
+{% block main_content %}
+<div class="max-w-3xl mx-auto">
+    <div class="content-card">
+        <div class="content-header">
+            <h1 class="content-title">Completar pago con Wompi</h1>
+            <p class="content-description">Confirma el pago seguro de tu pedido sin salir de Janay.</p>
+        </div>
+
+        <div class="p-6 space-y-6">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex items-start space-x-3">
+                <span class="material-icons text-emerald-600">lock</span>
+                <div>
+                    <p class="text-sm text-emerald-900">
+                        Te redirigiremos a la pasarela de Wompi para realizar el pago en línea. Al finalizar, volverás automáticamente a Janay.
+                    </p>
+                    {% if terms_link %}
+                        <p class="text-xs text-emerald-800 mt-2">
+                            Al continuar aceptas los <a href="{{ terms_link }}" class="text-emerald-700 underline" target="_blank" rel="noopener">términos y condiciones de Wompi</a>.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl p-4">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Resumen del pedido</h2>
+                <dl class="space-y-2 text-sm text-gray-700">
+                    <div class="flex justify-between">
+                        <dt>Número de pedido:</dt>
+                        <dd class="font-medium">{{ order.order_number }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt>Cliente:</dt>
+                        <dd class="font-medium">{{ order.customer_name }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt>Total a pagar:</dt>
+                        <dd class="text-xl font-semibold text-orange-600">${{ order.total|intcomma }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            {% if acceptance_error %}
+                <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
+                    <p class="font-semibold">No pudimos iniciar el pago con Wompi.</p>
+                    <p class="text-sm mt-2">{{ acceptance_error }}</p>
+                    <p class="text-xs mt-2">Por favor intenta nuevamente en unos minutos o elige otro método de pago.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center border-t border-gray-200 p-4 md:p-6 space-y-3 md:space-y-0">
+            <a href="{% url 'orders:step3' %}" class="btn-step-cancel">
+                <span class="material-icons mr-2 text-sm">arrow_back</span>
+                Volver a mi pedido
+            </a>
+
+            <button id="wompi-pay-btn" class="btn-step-continue {% if acceptance_error %}opacity-50 cursor-not-allowed{% endif %}" {% if acceptance_error %}disabled{% endif %}>
+                Pagar con Wompi
+                <span class="material-icons ml-2 text-sm">payments</span>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block dashboard_js %}
+{{ block.super }}
+<script src="https://checkout.wompi.co/widget.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const payButton = document.getElementById('wompi-pay-btn');
+        if (!payButton || payButton.hasAttribute('disabled')) {
+            return;
+        }
+
+        payButton.addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const checkout = new WidgetCheckout({
+                currency: 'COP',
+                amountInCents: {{ amount_in_cents|default:0 }},
+                reference: '{{ order.order_number|escapejs }}',
+                publicKey: '{{ public_key|escapejs }}',
+                redirectUrl: '{{ redirect_url|escapejs }}'{% if integrity_signature %},
+                signature: {
+                    integritySignature: '{{ integrity_signature }}'
+                }{% endif %}
+            });
+
+            checkout.open(function(result) {
+                if (result && result.transaction && result.transaction.id) {
+                    const url = new URL('{{ redirect_url|escapejs }}');
+                    url.searchParams.set('transactionId', result.transaction.id);
+                    window.location.href = url.toString();
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

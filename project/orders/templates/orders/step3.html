@@ -111,68 +111,34 @@
                 </h3>
                 
                 <div class="mt-4 space-y-3">
-                    <!-- Efectivo -->
+                    {% for method in payment_methods %}
                     <label class="radio-option">
-                        <input type="radio" name="payment_method" value="cash" 
-                               class="radio-option-input peer" checked>
-                        <div class="payment-option-card peer-checked:border-green-500 peer-checked:bg-green-50">
+                        <input type="radio" name="payment_method" value="{{ method.value }}"
+                               class="radio-option-input peer"
+                               {% if method.value == default_payment_method %}checked{% elif not default_payment_method and forloop.first %}checked{% endif %}>
+                        <div class="payment-option-card {{ method.card_classes }}">
                             <div class="payment-option-content">
                                 <div class="payment-option-icon">
-                                    <span class="material-icons text-green-600">payments</span>
+                                    <span class="material-icons {{ method.icon_classes }}">{{ method.icon }}</span>
                                 </div>
                                 <div class="payment-option-text">
-                                    <div class="payment-option-title">Efectivo</div>
-                                    <div class="payment-option-description">Pago al recibir</div>
+                                    <div class="payment-option-title">{{ method.label }}</div>
+                                    <div class="payment-option-description">{{ method.description }}</div>
                                 </div>
                             </div>
                         </div>
                     </label>
-
-                    <!-- Transferencia -->
-                    <label class="radio-option">
-                        <input type="radio" name="payment_method" value="transfer" 
-                               class="radio-option-input peer">
-                        <div class="payment-option-card peer-checked:border-blue-500 peer-checked:bg-blue-50">
-                            <div class="payment-option-content">
-                                <div class="payment-option-icon">
-                                    <span class="material-icons text-blue-600">account_balance</span>
-                                </div>
-                                <div class="payment-option-text">
-                                    <div class="payment-option-title">Transferencia</div>
-                                    <div class="payment-option-description">Bancolombia, Nequi</div>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
-
-                    <!-- PSE -->
-                    <label class="radio-option">
-                        <input type="radio" name="payment_method" value="pse" 
-                               class="radio-option-input peer">
-                        <div class="payment-option-card peer-checked:border-purple-500 peer-checked:bg-purple-50">
-                            <div class="payment-option-content">
-                                <div class="payment-option-icon">
-                                    <span class="material-icons text-purple-600">credit_card</span>
-                                </div>
-                                <div class="payment-option-text">
-                                    <div class="payment-option-title">PSE</div>
-                                    <div class="payment-option-description">Pago seguro en línea</div>
-                                </div>
-                            </div>
-                        </div>
-                    </label>
+                    {% empty %}
+                    <p class="text-sm text-gray-600">No hay métodos de pago disponibles en este momento.</p>
+                    {% endfor %}
 
                     <!-- Información del método seleccionado -->
                     <div id="payment-info" class="mt-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-                        <div id="cash-info">
-                            <p><strong>Efectivo:</strong> Paga al recibir tu pedido. Ten el monto exacto disponible.</p>
+                        {% for method in payment_methods %}
+                        <div data-payment-info="{{ method.value }}" style="display: none;">
+                            <p><strong>{{ method.label }}:</strong> {{ method.info }}</p>
                         </div>
-                        <div id="transfer-info" style="display: none;">
-                            <p><strong>Transferencia:</strong> Recibirás los datos bancarios por WhatsApp para completar el pago.</p>
-                        </div>
-                        <div id="pse-info" style="display: none;">
-                            <p><strong>PSE:</strong> Serás redirigido a la plataforma de tu banco para completar el pago.</p>
-                        </div>
+                        {% endfor %}
                     </div>
                 </div>
             </div>
@@ -206,8 +172,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const selectedProducts = {{ selected_products|safe }};
         const settings = {
-            minimumOrder: {{ settings.minimum_order_amount|default:20000|floatformat:0 }},
-            freeDeliveryThreshold: {{ settings.free_delivery_threshold|default:50000|floatformat:0 }}
+            minimumOrder: Number('{{ settings.minimum_order_amount|default:20000|floatformat:0 }}'),
+            freeDeliveryThreshold: Number('{{ settings.free_delivery_threshold|default:50000|floatformat:0 }}'),
+            deliveryCost: Number('{{ settings.delivery_cost|default:0|floatformat:0 }}')
         };
 
         // Llenar información básica
@@ -308,18 +275,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function setupPaymentMethodChange() {
         const radios = document.querySelectorAll('input[name="payment_method"]');
+        const infoSections = document.querySelectorAll('[data-payment-info]');
+
+        function hideAllPaymentInfos() {
+            infoSections.forEach(section => {
+                section.style.display = 'none';
+            });
+        }
+
         radios.forEach(radio => {
             radio.addEventListener('change', function() {
-                // Ocultar todas las infos
-                document.getElementById('cash-info').style.display = 'none';
-                document.getElementById('transfer-info').style.display = 'none';
-                document.getElementById('pse-info').style.display = 'none';
-                
-                // Mostrar la info correspondiente
-                document.getElementById(this.value + '-info').style.display = 'block';
-        
+                hideAllPaymentInfos();
+                const target = document.querySelector(`[data-payment-info="${this.value}"]`);
+                if (target) {
+                    target.style.display = 'block';
+                }
             });
         });
+
+        hideAllPaymentInfos();
+        const checked = document.querySelector('input[name="payment_method"]:checked');
+        if (checked) {
+            const defaultSection = document.querySelector(`[data-payment-info="${checked.value}"]`);
+            if (defaultSection) {
+                defaultSection.style.display = 'block';
+            }
+        }
     }
 
     function createHiddenInputs(orderInfo, selectedProducts, notes) {
