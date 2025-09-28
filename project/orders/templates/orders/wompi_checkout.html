@@ -70,13 +70,53 @@
 
 {% block dashboard_js %}
 {{ block.super }}
-<script src="{{ widget_js_url }}"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const payButton = document.getElementById('wompi-pay-btn');
         if (!payButton || payButton.hasAttribute('disabled')) {
             return;
         }
+
+        const wompiScriptSources = JSON.parse('{{ widget_js_sources|escapejs }}');
+        let widgetReady = typeof WidgetCheckout !== 'undefined';
+        let loadedScriptUrl = widgetReady ? '{{ widget_js_url|escapejs }}' : null;
+
+        function markWidgetReady(scriptUrl) {
+            widgetReady = true;
+            loadedScriptUrl = scriptUrl;
+            console.info('Script de Wompi cargado correctamente:', scriptUrl);
+        }
+
+        function loadWompiScript(index) {
+            if (widgetReady) {
+                return;
+            }
+
+            if (!Array.isArray(wompiScriptSources) || wompiScriptSources.length === 0) {
+                console.error('No se configuraron URLs del widget de Wompi.');
+                return;
+            }
+
+            if (index >= wompiScriptSources.length) {
+                console.error('No fue posible cargar el script del widget de Wompi.');
+                return;
+            }
+
+            const scriptUrl = wompiScriptSources[index];
+            const scriptTag = document.createElement('script');
+            scriptTag.src = scriptUrl;
+            scriptTag.async = true;
+            scriptTag.onload = function() {
+                markWidgetReady(scriptUrl);
+            };
+            scriptTag.onerror = function() {
+                console.warn('Fallo al cargar el script de Wompi:', scriptUrl);
+                loadWompiScript(index + 1);
+            };
+            document.head.appendChild(scriptTag);
+        }
+
+        loadWompiScript(0);
 
         const wompiConfig = {
             currency: 'COP',
@@ -100,7 +140,9 @@
 
             try {
                 if (typeof WidgetCheckout === 'undefined') {
-                    throw new Error('WidgetCheckout no está disponible. Verifica que el script de Wompi cargó correctamente.');
+                    const message = 'WidgetCheckout no está disponible. Verifica que el script de Wompi cargó correctamente.';
+                    console.error(message, { loadedScriptUrl });
+                    throw new Error(message);
                 }
 
                 const checkoutOptions = {

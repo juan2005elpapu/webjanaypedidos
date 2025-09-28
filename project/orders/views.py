@@ -534,6 +534,7 @@ def wompi_checkout(request, order_id):
         'settings': settings_obj,
         'environment': env,
         'widget_js_url': env.widget_js_url,
+        'widget_js_sources': json.dumps(env.widget_js_urls),
         'amount_in_cents': amount_in_cents,
         'amount_formatted': f"{total_amount:.2f}",
         'reference': reference,

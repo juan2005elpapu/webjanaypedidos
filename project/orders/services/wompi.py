@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 from urllib import error, request
 
 
@@ -18,6 +18,7 @@ class WompiEnvironment:
 
     api_url: str
     widget_js_url: str
+    widget_js_urls: Tuple[str, ...]
 
 
 def get_wompi_base_url(environment: str) -> WompiEnvironment:
@@ -28,10 +29,18 @@ def get_wompi_base_url(environment: str) -> WompiEnvironment:
         return WompiEnvironment(
             api_url='https://production.wompi.co',
             widget_js_url='https://checkout.wompi.co/widget.js',
+            widget_js_urls=(
+                'https://checkout.wompi.co/widget.js',
+                'https://cdn.wompi.co/widget.js',
+            ),
         )
     return WompiEnvironment(
         api_url='https://sandbox.wompi.co',
-        widget_js_url='https://sandbox.checkout.wompi.co/widget.js',
+        widget_js_url='https://checkout.wompi.co/widget.js',
+        widget_js_urls=(
+            'https://checkout.wompi.co/widget.js',
+            'https://cdn.wompi.co/widget.js',
+        ),
     )
 
 
