@@ -84,6 +84,7 @@
             reference: '{{ reference|escapejs }}',
             publicKey: '{{ public_key|escapejs }}',
             redirectUrl: '{{ redirect_url|escapejs }}',
+            acceptanceToken: {% if acceptance_data.presigned_acceptance.acceptance_token %}'{{ acceptance_data.presigned_acceptance.acceptance_token|escapejs }}'{% else %}null{% endif %},
             integritySignature: {% if integrity_signature %}'{{ integrity_signature|escapejs }}'{% else %}null{% endif %},
             signaturePayload: {% if integrity_signature_payload %}'{{ integrity_signature_payload|escapejs }}'{% else %}null{% endif %},
             formattedAmount: '{{ amount_formatted|default:"0.00"|escapejs }}'
@@ -105,8 +106,12 @@
 
                 if (wompiConfig.integritySignature) {
                     checkoutOptions.signature = {
-                        integritySignature: wompiConfig.integritySignature
+                        integrity: wompiConfig.integritySignature
                     };
+                }
+
+                if (wompiConfig.acceptanceToken) {
+                    checkoutOptions.acceptanceToken = wompiConfig.acceptanceToken;
                 }
 
                 const checkout = new WidgetCheckout(checkoutOptions);
