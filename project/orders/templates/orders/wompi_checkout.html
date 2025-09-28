@@ -78,27 +78,49 @@
             return;
         }
 
+        const wompiConfig = {
+            currency: 'COP',
+            amountInCents: {{ amount_in_cents|default:0 }},
+            reference: '{{ reference|escapejs }}',
+            publicKey: '{{ public_key|escapejs }}',
+            redirectUrl: '{{ redirect_url|escapejs }}',
+            integritySignature: {% if integrity_signature %}'{{ integrity_signature|escapejs }}'{% else %}null{% endif %},
+            signaturePayload: {% if integrity_signature_payload %}'{{ integrity_signature_payload|escapejs }}'{% else %}null{% endif %},
+            formattedAmount: '{{ amount_formatted|default:"0.00"|escapejs }}'
+        };
+
+        console.log('Wompi checkout data', wompiConfig);
+
         payButton.addEventListener('click', function(event) {
             event.preventDefault();
 
-            const checkout = new WidgetCheckout({
-                currency: 'COP',
-                amountInCents: {{ amount_in_cents|default:0 }},
-                reference: '{{ order.order_number|escapejs }}',
-                publicKey: '{{ public_key|escapejs }}',
-                redirectUrl: '{{ redirect_url|escapejs }}'{% if integrity_signature %},
-                signature: {
-                    integritySignature: '{{ integrity_signature }}'
-                }{% endif %}
-            });
+            try {
+                const checkoutOptions = {
+                    currency: wompiConfig.currency,
+                    amountInCents: wompiConfig.amountInCents,
+                    reference: wompiConfig.reference,
+                    publicKey: wompiConfig.publicKey,
+                    redirectUrl: wompiConfig.redirectUrl,
+                };
 
-            checkout.open(function(result) {
-                if (result && result.transaction && result.transaction.id) {
-                    const url = new URL('{{ redirect_url|escapejs }}');
-                    url.searchParams.set('transactionId', result.transaction.id);
-                    window.location.href = url.toString();
+                if (wompiConfig.integritySignature) {
+                    checkoutOptions.signature = {
+                        integritySignature: wompiConfig.integritySignature
+                    };
                 }
-            });
+
+                const checkout = new WidgetCheckout(checkoutOptions);
+
+                checkout.open(function(result) {
+                    if (result && result.transaction && result.transaction.id) {
+                        const url = new URL('{{ redirect_url|escapejs }}');
+                        url.searchParams.set('transactionId', result.transaction.id);
+                        window.location.href = url.toString();
+                    }
+                });
+            } catch (error) {
+                console.error('Error al abrir el widget de Wompi', error);
+            }
         });
     });
 </script>

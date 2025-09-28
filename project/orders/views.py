@@ -501,28 +501,35 @@ def wompi_checkout(request, order_id):
         acceptance_error = str(exc)
 
     order.refresh_from_db()
-    amount_in_cents = int((order.total or Decimal('0')) * Decimal('100'))
+    total_amount = (order.total or Decimal('0')).quantize(Decimal('0.01'))
+    amount_in_cents = int(total_amount * Decimal('100'))
+    reference = (order.order_number or '').strip()
 
     redirect_url = request.build_absolute_uri(
         reverse('orders:wompi_result', args=[order.id])
     )
 
     integrity_signature = None
-    if settings_obj.wompi_integrity_key and amount_in_cents:
-        payload = f"{order.order_number}{amount_in_cents}COP{settings_obj.wompi_integrity_key}"
-        integrity_signature = hashlib.sha256(payload.encode('utf-8')).hexdigest()
+    signature_payload = None
+    integrity_key = (settings_obj.wompi_integrity_key or '').strip()
+    if integrity_key and amount_in_cents:
+        signature_payload = f"{reference}{amount_in_cents}COP{integrity_key}"
+        integrity_signature = hashlib.sha256(signature_payload.encode('utf-8')).hexdigest()
 
     context = {
         'order': order,
         'settings': settings_obj,
         'environment': env,
         'amount_in_cents': amount_in_cents,
+        'amount_formatted': f"{total_amount:.2f}",
+        'reference': reference,
         'public_key': settings_obj.wompi_public_key,
         'redirect_url': redirect_url,
         'acceptance_data': acceptance_data,
         'acceptance_error': acceptance_error,
         'terms_link': acceptance_data.get('presigned_acceptance', {}).get('permalink'),
         'integrity_signature': integrity_signature,
+        'integrity_signature_payload': signature_payload,
     }
 
     return render(request, 'orders/wompi_checkout.html', context)
