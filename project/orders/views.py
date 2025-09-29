@@ -1,3 +1,9 @@
+from datetime import datetime, timedelta
+from decimal import Decimal
+import hashlib
+import json
+import traceback
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -5,13 +11,19 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
 from django.urls import reverse
-from datetime import datetime, timedelta
-from decimal import Decimal
-import json
 from django.core.cache import cache
-import traceback
 
 from .models import Order, OrderItem, BusinessSettings
+from .services import (
+    WompiAPIError,
+    get_acceptance_information,
+    get_transaction_information,
+    get_wompi_base_url,
+    detect_wompi_key_environment,
+    normalize_wompi_key,
+    split_phone_number,
+    verify_event_signature,
+)
 from products.models import Product, Category
 
 @login_required
@@ -270,6 +282,61 @@ def order_step3(request):
     order_info = cart_data.get('order_info', {})
     selected_products = cart_data.get('selected_products', {})
     order_notes = cart_data.get('order_notes', '')
+    settings_obj = BusinessSettings.get_settings()
+
+    payment_details = {
+        'cash': {
+            'icon': 'payments',
+            'card_classes': 'peer-checked:border-green-500 peer-checked:bg-green-50',
+            'icon_classes': 'text-green-600',
+            'description': 'Pago al recibir',
+            'info': 'Paga al recibir tu pedido. Ten el monto exacto disponible.',
+        },
+        'wompi': {
+            'icon': 'payments',
+            'card_classes': 'peer-checked:border-emerald-500 peer-checked:bg-emerald-50',
+            'icon_classes': 'text-emerald-600',
+            'description': 'Pagos en línea seguros',
+            'info': 'Completa el pago en línea sin salir de Janay mediante la pasarela de Wompi.',
+        },
+    }
+
+    available_payment_methods = []
+    for value, label in Order.PAYMENT_METHOD:
+        is_enabled = False
+        if value == 'cash':
+            is_enabled = settings_obj.accept_cash
+        elif value == 'wompi':
+            is_enabled = bool(settings_obj.accept_wompi and settings_obj.wompi_public_key)
+
+        if not is_enabled:
+            continue
+
+        details = payment_details.get(value, {})
+        available_payment_methods.append({
+            'value': value,
+            'label': label,
+            'icon': details.get('icon', 'payments'),
+            'card_classes': details.get('card_classes', 'peer-checked:border-blue-500 peer-checked:bg-blue-50'),
+            'icon_classes': details.get('icon_classes', 'text-blue-600'),
+            'description': details.get('description', 'Método de pago disponible'),
+            'info': details.get('info', 'Selecciona esta opción para continuar.'),
+        })
+
+    if not available_payment_methods:
+        available_payment_methods.append({
+            'value': 'cash',
+            'label': dict(Order.PAYMENT_METHOD).get('cash', 'Efectivo'),
+            'icon': 'payments',
+            'card_classes': 'peer-checked:border-green-500 peer-checked:bg-green-50',
+            'icon_classes': 'text-green-600',
+            'description': 'Pago al recibir',
+            'info': 'Paga al recibir tu pedido. Ten el monto exacto disponible.',
+        })
+
+    default_payment_method = cart_data.get('payment_method')
+    if default_payment_method not in {method['value'] for method in available_payment_methods}:
+        default_payment_method = available_payment_methods[0]['value']
     
     # Verificación adicional de seguridad
     if not selected_products:
@@ -278,33 +345,70 @@ def order_step3(request):
     
     if request.method == 'POST':
         # Crear el pedido
-        payment_method = request.POST.get('payment_method', 'cash')
-        final_order_notes = request.POST.get('order_notes', order_notes)       
+        payment_method = request.POST.get('payment_method', default_payment_method)
+        valid_methods = {method['value'] for method in available_payment_methods}
+        if payment_method not in valid_methods:
+            messages.error(request, "El método de pago seleccionado no está disponible.")
+            return redirect('orders:step3')
+
+        cart_data['payment_method'] = payment_method
+        request.session['order_cart'] = cart_data
+        request.session.modified = True
+
+        final_order_notes = request.POST.get('order_notes', order_notes)
         try:
-            # Crear el pedido
-            order = Order.objects.create(
-                user=request.user,
-                delivery_type=order_info.get('delivery_type', 'pickup'),
-                customer_name=order_info.get('customer_name', ''),
-                customer_phone=order_info.get('customer_phone', ''),
-                customer_email=order_info.get('customer_email', ''),
-                desired_date=datetime.strptime(order_info.get('desired_date'), '%Y-%m-%d').date(),
-                desired_time=datetime.strptime(order_info.get('desired_time'), '%H:%M').time(),
-                delivery_address=order_info.get('delivery_address', ''),
-                delivery_neighborhood=order_info.get('delivery_neighborhood', ''),
-                delivery_references=order_info.get('delivery_references', ''),
-                payment_method=payment_method,
-                notes=final_order_notes,  # CAMBIAR 'special_instructions' por 'notes'
-                status='pending'
-            )
-            
+            desired_date = datetime.strptime(order_info.get('desired_date'), '%Y-%m-%d').date()
+            desired_time = datetime.strptime(order_info.get('desired_time'), '%H:%M').time()
+
+            order = None
+            pending_order_id = request.session.get('wompi_pending_order_id')
+            if pending_order_id:
+                try:
+                    order = Order.objects.get(id=pending_order_id, user=request.user)
+                except Order.DoesNotExist:
+                    request.session.pop('wompi_pending_order_id', None)
+                    order = None
+
+            if order:
+                order.items.all().delete()
+                order.delivery_type = order_info.get('delivery_type', 'pickup')
+                order.customer_name = order_info.get('customer_name', '')
+                order.customer_phone = order_info.get('customer_phone', '')
+                order.customer_email = order_info.get('customer_email', '')
+                order.desired_date = desired_date
+                order.desired_time = desired_time
+                order.delivery_address = order_info.get('delivery_address', '')
+                order.delivery_neighborhood = order_info.get('delivery_neighborhood', '')
+                order.delivery_references = order_info.get('delivery_references', '')
+                order.payment_method = payment_method
+                order.notes = final_order_notes
+                order.status = 'pending'
+                order.payment_status = 'pending'
+                order.payment_reference = ''
+                order.save()
+            else:
+                order = Order.objects.create(
+                    user=request.user,
+                    delivery_type=order_info.get('delivery_type', 'pickup'),
+                    customer_name=order_info.get('customer_name', ''),
+                    customer_phone=order_info.get('customer_phone', ''),
+                    customer_email=order_info.get('customer_email', ''),
+                    desired_date=desired_date,
+                    desired_time=desired_time,
+                    delivery_address=order_info.get('delivery_address', ''),
+                    delivery_neighborhood=order_info.get('delivery_neighborhood', ''),
+                    delivery_references=order_info.get('delivery_references', ''),
+                    payment_method=payment_method,
+                    notes=final_order_notes,
+                    status='pending'
+                )
+
             # Crear los items del pedido CON LAS CANTIDADES CORRECTAS
-            total_amount = 0
             for product_id, quantity in selected_products.items():
                 try:
                     product = Product.objects.get(id=product_id)
                     quantity = int(quantity)  # Asegurar que sea entero
-                    
+
                     OrderItem.objects.create(
                         order=order,
                         product=product,
@@ -312,36 +416,25 @@ def order_step3(request):
                         unit_price=product.price,
                         total_price=product.price * quantity
                     )
-                    
-                    total_amount += product.price * quantity
-                    
+
                 except Product.DoesNotExist:
                     continue
-            
-            # Calcular envío BASADO EN EL TIPO DE ENTREGA
-            settings = BusinessSettings.get_settings()
-            shipping_cost = 0
-            
-            # Solo aplicar costo de envío si es delivery
-            if order_info.get('delivery_type') == 'delivery':
-                shipping_cost = 0 if total_amount >= settings.free_delivery_threshold else settings.delivery_cost
-            
-            # Actualizar totales del pedido
-            order.subtotal = total_amount
-            order.shipping_cost = shipping_cost
-            order.total_amount = total_amount + shipping_cost
-            order.save()
-            # Limpiar sesión
+
+            # Asegurar que los totales se calculen correctamente
+            order.refresh_from_db()
+            messages.success(request, f"¡Pedido #{order.id} creado exitosamente!")
+
+            if payment_method == 'wompi':
+                request.session['wompi_pending_order_id'] = order.id
+                request.session.modified = True
+                return redirect('orders:wompi_checkout', order_id=order.id)
+
+            request.session.pop('wompi_pending_order_id', None)
             if 'order_cart' in request.session:
                 del request.session['order_cart']
-            
-            messages.success(request, f"¡Pedido #{order.id} creado exitosamente!")
-            
-            # Si el método de pago es efectivo, redirigir a la página de éxito
-            if payment_method == 'cash':
-                return redirect('orders:success', order_id=order.id)
-            else:
-                return redirect('orders:order_detail', order_id=order.id)
+            request.session.modified = True
+
+            return redirect('orders:success', order_id=order.id)
         
         except Exception as e:
             traceback.print_exc()
@@ -371,8 +464,10 @@ def order_step3(request):
         'selected_products': json.dumps(selected_products),
         'products_data': json.dumps(products_data),
         'order_notes': order_notes,
-        'settings': BusinessSettings.get_settings(),
-        
+        'settings': settings_obj,
+        'payment_methods': available_payment_methods,
+        'default_payment_method': default_payment_method,
+
         # Datos para el template base de steps
         'step_number': 3,
         'current_step': 3,
@@ -386,7 +481,241 @@ def order_step3(request):
     return render(request, 'orders/step3.html', context)
 
 
+@login_required
+def wompi_checkout(request, order_id):
+    """Pantalla intermedia para iniciar el pago con Wompi."""
+
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    settings_obj = BusinessSettings.get_settings()
+
+    if not (settings_obj.accept_wompi and settings_obj.wompi_public_key):
+        messages.error(request, 'Los pagos con Wompi no están configurados actualmente.')
+        return redirect('orders:success', order_id=order.id)
+
+    env = get_wompi_base_url(settings_obj.wompi_environment)
+    acceptance_data = {}
+    acceptance_error = None
+    acceptance_token = None
+    terms_link = None
+
+    public_key = normalize_wompi_key(settings_obj.wompi_public_key)
+    private_key = normalize_wompi_key(settings_obj.wompi_private_key)
+    integrity_key = normalize_wompi_key(settings_obj.wompi_integrity_key)
+    event_key = normalize_wompi_key(settings_obj.wompi_event_key)
+
+    key_mismatch_errors = []
+    for label, key in (
+        ('llave pública', public_key),
+        ('llave privada', private_key),
+        ('llave de integridad', integrity_key),
+        ('llave de eventos', event_key),
+    ):
+        key_environment = detect_wompi_key_environment(key)
+        if key_environment and key_environment != settings_obj.wompi_environment:
+            key_mismatch_errors.append(
+                (
+                    f"La {label} parece corresponder al entorno "
+                    f"{key_environment.upper()}, pero la configuración actual de Wompi "
+                    f"está en {settings_obj.wompi_environment.upper()}. Revisa las llaves en "
+                    'https://docs.wompi.co/docs/colombia/ambientes-y-llaves '
+                    'para evitar respuestas 422 del API.'
+                )
+            )
+
+    if key_mismatch_errors:
+        acceptance_error = ' '.join(key_mismatch_errors)
+    else:
+        try:
+            acceptance_data = get_acceptance_information(
+                public_key,
+                settings_obj.wompi_environment,
+            )
+        except WompiAPIError as exc:
+            acceptance_error = str(exc)
+        else:
+            presigned = acceptance_data.get('presigned_acceptance') or {}
+            acceptance_token = presigned.get('acceptance_token') or None
+            terms_link = presigned.get('permalink')
+            if not acceptance_token and not acceptance_error:
+                acceptance_error = (
+                    'No fue posible obtener el token de aceptación de Wompi. '
+                    'Por favor intenta nuevamente en unos minutos.'
+                )
+
+    order.refresh_from_db()
+    total_amount = (order.total or Decimal('0')).quantize(Decimal('0.01'))
+    amount_in_cents = int(total_amount * Decimal('100'))
+    reference = (order.order_number or '').strip()
+
+    redirect_url = request.build_absolute_uri(
+        reverse('orders:wompi_result', args=[order.id])
+    )
+
+    integrity_signature = None
+    signature_payload = None
+    if integrity_key and amount_in_cents:
+        signature_payload = f"{reference}{amount_in_cents}COP{integrity_key}"
+        integrity_signature = hashlib.sha256(signature_payload.encode('utf-8')).hexdigest()
+
+    customer_phone_raw = (order.customer_phone or '').strip()
+    phone_prefix, phone_number = split_phone_number(customer_phone_raw)
+
+    context = {
+        'order': order,
+        'settings': settings_obj,
+        'environment': env,
+        'widget_js_url': env.widget_js_url,
+        'widget_js_sources': json.dumps(env.widget_js_urls),
+        'amount_in_cents': amount_in_cents,
+        'amount_formatted': f"{total_amount:.2f}",
+        'reference': reference,
+        'public_key': public_key,
+        'redirect_url': redirect_url,
+        'acceptance_data': acceptance_data,
+        'acceptance_error': acceptance_error,
+        'acceptance_token': acceptance_token,
+        'terms_link': terms_link,
+        'integrity_signature': integrity_signature,
+        'integrity_signature_payload': signature_payload,
+        'customer_email': (order.customer_email or '').strip(),
+        'customer_phone': phone_number,
+        'customer_phone_prefix': phone_prefix,
+        'customer_phone_raw': customer_phone_raw,
+        'customer_name': (order.customer_name or '').strip(),
+    }
+
+    return render(request, 'orders/wompi_checkout.html', context)
+
+
+@login_required
+def wompi_result(request, order_id):
+    """Vista de resultado a la que redirige Wompi tras el pago."""
+
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    settings_obj = BusinessSettings.get_settings()
+
+    transaction_id = (
+        request.GET.get('id')
+        or request.GET.get('transactionId')
+        or request.GET.get('transaction_id')
+    )
+
+    transaction_data = {}
+    transaction_status = None
+    transaction_amount = None
+    error_message = None
+
+    if transaction_id:
+        public_key = normalize_wompi_key(settings_obj.wompi_public_key)
+        private_key = normalize_wompi_key(settings_obj.wompi_private_key)
+        try:
+            transaction_data = get_transaction_information(
+                transaction_id,
+                settings_obj.wompi_environment,
+                public_key=public_key,
+                private_key=private_key,
+            )
+            transaction_status = transaction_data.get('status')
+            amount_in_cents = transaction_data.get('amount_in_cents')
+            if amount_in_cents is not None:
+                transaction_amount = Decimal(amount_in_cents) / Decimal('100')
+
+            order.payment_reference = transaction_id
+            if transaction_status == 'APPROVED':
+                order.payment_status = 'confirmed'
+            elif transaction_status in {'DECLINED', 'ERROR', 'VOIDED'}:
+                order.payment_status = 'cancelled'
+            else:
+                order.payment_status = 'pending'
+
+            order.save(update_fields=['payment_status', 'payment_reference', 'updated_at'])
+        except WompiAPIError as exc:
+            error_message = str(exc)
+    else:
+        error_message = 'No recibimos información de la transacción desde Wompi.'
+
+    status_labels = {
+        'APPROVED': 'Aprobada',
+        'DECLINED': 'Rechazada',
+        'ERROR': 'Error',
+        'PENDING': 'Pendiente',
+        'VOIDED': 'Anulada',
+    }
+
+    if transaction_status == 'APPROVED':
+        request.session.pop('order_cart', None)
+        request.session.pop('wompi_pending_order_id', None)
+        request.session.modified = True
+
+    context = {
+        'order': order,
+        'transaction_id': transaction_id,
+        'transaction': transaction_data,
+        'transaction_status': transaction_status,
+        'transaction_status_label': status_labels.get(transaction_status, 'Desconocido'),
+        'transaction_amount': transaction_amount,
+        'error_message': error_message,
+    }
+
+    return render(request, 'orders/wompi_result.html', context)
+
+
 # Añadir esta nueva función después de order_detail
+@csrf_exempt
+def wompi_webhook(request):
+    """Recibe eventos firmados de Wompi para sincronizar el pedido."""
+
+    if request.method != 'POST':
+        return JsonResponse({'detail': 'Método no permitido'}, status=405)
+
+    settings_obj = BusinessSettings.get_settings()
+    event_key = normalize_wompi_key(settings_obj.wompi_event_key)
+    if not event_key:
+        return JsonResponse({'detail': 'Llave de eventos no configurada'}, status=400)
+
+    payload = request.body or b''
+    signature = request.headers.get('X-Event-Signature') or request.META.get('HTTP_X_EVENT_SIGNATURE', '')
+    if not verify_event_signature(event_key, payload, signature):
+        return JsonResponse({'detail': 'Firma inválida'}, status=400)
+
+    try:
+        event_payload = json.loads(payload.decode('utf-8'))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return JsonResponse({'detail': 'Contenido inválido'}, status=400)
+
+    transaction_data = (event_payload.get('data') or {}).get('transaction') or {}
+    transaction_id = transaction_data.get('id')
+    reference = transaction_data.get('reference')
+
+    order = None
+    if transaction_id:
+        order = Order.objects.filter(payment_reference=transaction_id).first()
+    if order is None and reference:
+        order = Order.objects.filter(order_number=reference).first()
+
+    if order is None:
+        return JsonResponse({'received': True, 'detail': 'Orden no encontrada'}, status=200)
+
+    status = (transaction_data.get('status') or '').upper()
+    status_map = {
+        'APPROVED': 'confirmed',
+        'DECLINED': 'cancelled',
+        'ERROR': 'cancelled',
+        'VOIDED': 'cancelled',
+        'PENDING': 'pending',
+    }
+
+    mapped_status = status_map.get(status)
+    if mapped_status:
+        order.payment_status = mapped_status
+    if transaction_id:
+        order.payment_reference = transaction_id
+
+    order.save(update_fields=['payment_status', 'payment_reference', 'updated_at'])
+
+    return JsonResponse({'received': True})
+
+
 @login_required
 def order_success(request, order_id):
     """Vista de éxito después de confirmar un pedido"""

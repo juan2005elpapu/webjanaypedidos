@@ -24,7 +24,7 @@ class OrderAdmin(ModelAdmin):
         'created_at', 'delivery_city'
     )
     search_fields = ('order_number', 'customer_name', 'customer_phone', 'customer_email')
-    readonly_fields = ('order_number', 'subtotal', 'total', 'created_at', 'updated_at')
+    readonly_fields = ('order_number', 'subtotal', 'total', 'created_at', 'updated_at', 'payment_reference')
     inlines = [OrderItemInline]
     date_hierarchy = 'desired_date'
     
@@ -46,7 +46,7 @@ class OrderAdmin(ModelAdmin):
             'fields': ('desired_date', 'desired_time', 'estimated_delivery', 'created_at', 'updated_at')
         }),
         ('Pagos', {
-            'fields': ('payment_status', 'payment_method')
+            'fields': ('payment_status', 'payment_method', 'payment_reference')
         }),
         ('Totales', {
             'fields': ('subtotal', 'delivery_fee', 'total')
@@ -317,7 +317,17 @@ class BusinessSettingsAdmin(ModelAdmin):
             'fields': ('delivery_start_time', 'delivery_end_time')
         }),
         ('Métodos de Pago', {
-            'fields': ('accept_cash', 'accept_transfer', 'accept_card', 'accept_pse')
+            'fields': ('accept_cash', 'accept_wompi')
+        }),
+        ('Configuración Wompi', {
+            'fields': (
+                'wompi_environment',
+                'wompi_public_key',
+                'wompi_private_key',
+                'wompi_integrity_key',
+                'wompi_event_key',
+            ),
+            'description': 'Configura las llaves proporcionadas por Wompi para habilitar pagos en línea.'
         }),
     )
     
