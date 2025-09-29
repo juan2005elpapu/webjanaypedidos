@@ -5,6 +5,7 @@ from .wompi import (
     get_acceptance_information,
     get_transaction_information,
     get_wompi_base_url,
+    split_phone_number,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     'get_acceptance_information',
     'get_transaction_information',
     'get_wompi_base_url',
+    'split_phone_number',
 ]
