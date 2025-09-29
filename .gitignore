@@ -9,3 +9,4 @@ staticfiles/
 migrations/
 styles.css
 theme/
+migrations/
