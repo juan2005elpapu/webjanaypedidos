@@ -69,7 +69,7 @@
                     <!-- Imagen del producto -->
                     <div class="product-card-image">
                         {% if product.image %}
-                            <img src="{{ product.image.url }}" 
+                            <img src="{{ product.image_secure_url }}" 
                                  alt="{{ product.name }}"
                                  class="product-card-image-container"
                                  id="img-{{ product.id }}"

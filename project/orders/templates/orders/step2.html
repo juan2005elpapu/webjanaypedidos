@@ -133,7 +133,7 @@
                                 <img alt="{{ product.name }}"
                                      style="display: none;"
                                      id="img-{{ product.id }}"
-                                     data-src="{{ product.image.url }}">
+                                     data-src="{{ product.image_secure_url }}">
                             {% else %}
                                 <div class="no-image-placeholder">
                                     <span class="material-icons text-gray-400 text-2xl">bakery_dining</span>
@@ -255,7 +255,7 @@ const products = {
         "name": "{{ product.name|escapejs }}",
         "price": {{ product.price|default:0|floatformat:0 }},
         "category": "{{ product.category.name|escapejs }}",
-        "imageUrl": "{% if product.image %}{{ product.image.url|escapejs }}{% endif %}"
+        "imageUrl": "{% if product.image %}{{ product.image_secure_url|escapejs }}{% endif %}"
     }{% if not forloop.last %},{% endif %}
 {% endfor %}
 };

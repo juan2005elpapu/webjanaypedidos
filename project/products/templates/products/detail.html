@@ -14,7 +14,7 @@
     <div class="product-detail-layout">
         <div class="product-detail-image-section">
             {% if product.image %}
-                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-detail-image">
+                <img src="{{ product.image_secure_url }}" alt="{{ product.name }}" class="product-detail-image">
             {% else %}
                 <div class="product-detail-no-image">
                     <span class="product-card-no-image-text">Sin imagen</span>

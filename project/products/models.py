@@ -43,7 +43,8 @@ class Product(models.Model):
         null=True,
         overwrite=True,
         resource_type="image",
-        transformation={"fetch_format": "auto", "quality": "auto"}
+        transformation={"fetch_format": "auto", "quality": "auto"},
+        folder="products"
     )
     is_available = models.BooleanField(default=True, verbose_name="Disponible")
     weight = models.PositiveIntegerField(
@@ -76,6 +77,11 @@ class Product(models.Model):
     @property
     def formatted_price(self):
         return f"${self.price:,.0f}"
+
+    def image_secure_url(self):
+        if self.image:
+            return self.image.build_url(secure=True, fetch_format="auto", quality="auto")
+        return ""
 
 
 
