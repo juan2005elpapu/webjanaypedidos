@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib import admin, messages
 from django.urls import reverse
+from django.utils.html import format_html
 from cloudinary.forms import CloudinaryFileField
 from unfold.admin import ModelAdmin
 from .models import Product, Category
