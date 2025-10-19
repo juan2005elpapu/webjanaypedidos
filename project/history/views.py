@@ -7,6 +7,7 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.utils import timezone
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.urls import reverse, NoReverseMatch
 from datetime import datetime, timedelta
 import json
 from orders.models import Order, BusinessSettings, OrderModificationRequest
@@ -126,11 +127,14 @@ def order_history_list(request):
 def order_detail_history(request, order_id):
     """Vista de detalle de un pedido específico"""
     
-    order = get_object_or_404(
-        Order.objects.prefetch_related('items__product'), 
-        id=order_id, 
-        user=request.user
-    )
+    order = get_object_or_404(Order, pk=order_id, user=request.user)
+    if order.payment_method == 'wompi' and order.payment_status == 'pending':
+        try:
+            wompi_checkout_url = reverse('orders:wompi_checkout', args=[order.id])
+        except NoReverseMatch:
+            wompi_checkout_url = None
+        if wompi_checkout_url:
+            return redirect(wompi_checkout_url)
     
     # ✅ CAMBIO: Siempre obtener la solicitud más reciente (si existe)
     modification_request = OrderModificationRequest.objects.filter(
