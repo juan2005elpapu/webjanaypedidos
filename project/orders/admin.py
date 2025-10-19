@@ -15,7 +15,7 @@ class OrderItemInline(admin.TabularInline):
 @admin.register(Order)
 class OrderAdmin(ModelAdmin):
     list_display = (
-        'order_number', 'customer_name', 'status', 'delivery_type_badge',
+        'order_number', 'customer_name', 'status',
         'desired_date', 'desired_time', 'total_formatted',
         'payment_method_display', 'payment_status', 'time_status'
     )
@@ -58,12 +58,6 @@ class OrderAdmin(ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
-    def delivery_type_badge(self, obj):
-        icon = '🏪' if obj.delivery_type == 'pickup' else '🚚'
-        return f"{icon} {obj.get_delivery_type_display()}"
-    delivery_type_badge.short_description = 'Entrega'
-    
     def total_formatted(self, obj):
         return f"${obj.total:,.0f}"
     total_formatted.short_description = 'Total'
