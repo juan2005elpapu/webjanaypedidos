@@ -6,10 +6,8 @@ media/
 env/
 env.py
 staticfiles/
-migrations/
 styles.css
 theme/
-migrations/
 *.log
 node_modules/
 /media/
