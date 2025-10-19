@@ -13,129 +13,118 @@
 
         <div class="p-6 space-y-6">
             {% if error_message %}
-                <div class="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4">
-                    <p class="font-semibold">No pudimos confirmar el pago.</p>
-                    <p class="text-sm mt-2">{{ error_message }}</p>
-                    <p class="text-xs mt-2">Puedes intentar nuevamente desde la opción de pago o comunicarte con nosotros.</p>
+                <div class="rounded-xl border border-red-200 bg-red-50 text-red-800 p-4">
+                    <h2 class="text-base font-semibold">No pudimos confirmar el pago.</h2>
+                    <p class="text-sm mt-1">{{ error_message }}</p>
+                    <p class="text-xs mt-3">Intenta nuevamente o comunícate con nosotros.</p>
                 </div>
             {% elif transaction_status == 'APPROVED' %}
-                <div class="rounded-xl p-4 border flex items-start space-x-3 bg-emerald-50 border-emerald-200 text-emerald-900">
-                    <span class="material-icons">
-                        check_circle
-                    </span>
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 p-4 flex items-start gap-3">
+                    <span class="material-icons">check_circle</span>
                     <div>
-                        <p class="text-base font-semibold">{{ transaction_status_label }}</p>
+                        <h2 class="text-base font-semibold">{{ transaction_status_label }}</h2>
                         <p class="text-sm mt-1">Tu pago fue aprobado exitosamente. ¡Gracias por confiar en Janay!</p>
                     </div>
                 </div>
             {% elif transaction_status == 'PENDING' %}
-                <div class="rounded-xl p-4 border flex items-start space-x-3 bg-yellow-50 border-yellow-200 text-yellow-900">
-                    <span class="material-icons">
-                        hourglass_bottom
-                    </span>
+                <div class="rounded-xl border border-yellow-200 bg-yellow-50 text-yellow-900 p-4 flex items-start gap-3">
+                    <span class="material-icons">hourglass_bottom</span>
                     <div>
-                        <p class="text-base font-semibold">{{ transaction_status_label }}</p>
-                        <p class="text-sm mt-1">El pago está en proceso de validación. Te notificaremos en cuanto recibamos la confirmación.</p>
+                        <h2 class="text-base font-semibold">{{ transaction_status_label }}</h2>
+                        <p class="text-sm mt-1">El pago está en proceso de validación. Te notificaremos cuando se confirme.</p>
                     </div>
                 </div>
-            {% elif transaction_status == 'declined' or transaction_status == 'failed' or transaction_status == 'error' %}
-                <div class="p-6 space-y-6">
-                    <div class="bg-red-100 border border-red-300 text-red-800 rounded-lg p-4 flex items-start gap-3">
-                        <span class="material-icons text-red-600">error</span>
-                        <div>
-                            <h2 class="text-xl font-semibold text-red-900">El pago no se completó</h2>
-                            <p class="text-sm">El pago fue rechazado o ocurrió un error. No se generó ningún cobro.</p>
-                        </div>
+            {% elif transaction_status == 'DECLINED' or transaction_status == 'FAILED' or transaction_status == 'ERROR' or transaction_status == 'VOIDED' %}
+                <div class="rounded-xl border border-red-300 bg-red-100 text-red-900 p-4 flex items-start gap-3">
+                    <span class="material-icons">error</span>
+                    <div>
+                        <h2 class="text-base font-semibold">{{ transaction_status_label }}</h2>
+                        <p class="text-sm mt-1">El pago fue rechazado o ocurrió un error. No se generó ningún cobro.</p>
                     </div>
-                </div>
-                <div class="flex justify-end border-t border-gray-200 p-4 md:p-6">
-                    <a href="{% url 'orders:step1' %}" class="btn-step-cancel bg-red-600 text-white hover:bg-red-700">
-                        Volver a realizar pedido
-                        <span class="material-icons ml-2 text-sm">refresh</span>
-                    </a>
                 </div>
             {% else %}
-                <div class="rounded-xl p-4 border flex items-start space-x-3 bg-gray-50 border-gray-200 text-gray-900">
-                    <span class="material-icons">
-                        info
-                    </span>
+                <div class="rounded-xl border border-gray-200 bg-gray-50 text-gray-900 p-4 flex items-start gap-3">
+                    <span class="material-icons">info</span>
                     <div>
-                        <p class="text-base font-semibold">{{ transaction_status_label }}</p>
+                        <h2 class="text-base font-semibold">{{ transaction_status_label }}</h2>
                         <p class="text-sm mt-1">Recibimos una respuesta de Wompi con estado "{{ transaction_status_label }}".</p>
                     </div>
                 </div>
             {% endif %}
-        </div>
 
-        <div class="border border-gray-200 rounded-xl p-4">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Resumen del pedido</h2>
-            <dl class="space-y-2 text-sm text-gray-700">
-                <div class="flex justify-between">
-                    <dt>Pedido:</dt>
-                    <dd class="font-medium">{{ order.order_number }}</dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt>Total:</dt>
-                    <dd class="font-semibold text-orange-600">${{ order.total|intcomma }}</dd>
-                </div>
-                <div class="flex justify-between">
-                    <dt>Estado del pago:</dt>
-                    <dd class="font-medium">{{ order.get_payment_status_display }}</dd>
-                </div>
-                {% if transaction_id %}
-                <div class="flex justify-between">
-                    <dt>ID de transacción:</dt>
-                    <dd class="font-mono text-xs">{{ transaction_id }}</dd>
-                </div>
-                {% endif %}
-            </dl>
-        </div>
-
-        {% if transaction %}
             <div class="border border-gray-200 rounded-xl p-4">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Información de la transacción</h2>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Resumen del pedido</h2>
                 <dl class="space-y-2 text-sm text-gray-700">
-                    {% if transaction.reference %}
                     <div class="flex justify-between">
-                        <dt>Referencia:</dt>
-                        <dd class="font-medium">{{ transaction.reference }}</dd>
+                        <dt>Pedido:</dt>
+                        <dd class="font-medium">{{ order.order_number }}</dd>
                     </div>
-                    {% endif %}
-                    {% if transaction_amount %}
                     <div class="flex justify-between">
-                        <dt>Monto reportado:</dt>
-                        <dd class="font-medium">${{ transaction_amount|intcomma }}</dd>
+                        <dt>Total:</dt>
+                        <dd class="font-semibold text-orange-600">${{ order.total|intcomma }}</dd>
                     </div>
-                    {% endif %}
-                    {% if transaction.payment_method_type %}
                     <div class="flex justify-between">
-                        <dt>Método:</dt>
-                        <dd class="font-medium">{{ transaction.payment_method_type|title }}</dd>
+                        <dt>Estado del pago:</dt>
+                        <dd class="font-medium">{{ order.get_payment_status_display }}</dd>
                     </div>
-                    {% endif %}
-                    {% if transaction.status_message %}
+                    {% if transaction_id %}
                     <div class="flex justify-between">
-                        <dt>Mensaje:</dt>
-                        <dd class="font-medium text-sm text-gray-600">{{ transaction.status_message }}</dd>
+                        <dt>ID de transacción:</dt>
+                        <dd class="font-mono text-xs">{{ transaction_id }}</dd>
                     </div>
                     {% endif %}
                 </dl>
             </div>
-        {% endif %}
-    </div>
 
-    <div class="flex justify-end border-t border-gray-200 p-4 md:p-6">
-        {% if order and order.payment_status == 'paid' %}
-            <a href="{% url 'orders:success' order.id %}" class="btn-step-continue">
-                Ver pedido confirmado
-                <span class="material-icons ml-2 text-sm">arrow_forward</span>
-            </a>
-        {% else %}
+            {% if transaction %}
+                <div class="border border-gray-200 rounded-xl p-4">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Información de la transacción</h2>
+                    <dl class="space-y-2 text-sm text-gray-700">
+                        {% if transaction.reference %}
+                        <div class="flex justify-between">
+                            <dt>Referencia:</dt>
+                            <dd class="font-medium">{{ transaction.reference }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if transaction_amount %}
+                        <div class="flex justify-between">
+                            <dt>Monto reportado:</dt>
+                            <dd class="font-medium">${{ transaction_amount|intcomma }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if transaction.payment_method_type %}
+                        <div class="flex justify-between">
+                            <dt>Método:</dt>
+                            <dd class="font-medium">{{ transaction.payment_method_type|title }}</dd>
+                        </div>
+                        {% endif %}
+                        {% if transaction.status_message %}
+                        <div class="flex justify-between">
+                            <dt>Mensaje:</dt>
+                            <dd class="font-medium text-sm text-gray-600">{{ transaction.status_message }}</dd>
+                        </div>
+                        {% endif %}
+                    </dl>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-col md:flex-row md:justify-end md:items-center gap-3 border-t border-gray-200 p-4 md:p-6">
+            {% if order and order.payment_status == 'paid' %}
+                <a href="{% url 'orders:success' order.id %}" class="btn-step-continue">
+                    Ver pedido confirmado
+                    <span class="material-icons ml-2 text-sm">arrow_forward</span>
+                </a>
+            {% endif %}
             <a href="{% url 'orders:step1' %}" class="btn-step-cancel">
                 Volver a realizar pedido
                 <span class="material-icons ml-2 text-sm">refresh</span>
             </a>
-        {% endif %}
+            <a href="{% url 'history:order_history_list' %}" class="btn-step-secondary">
+                Ver historial de pedidos
+                <span class="material-icons ml-2 text-sm">history</span>
+            </a>
+        </div>
     </div>
 </div>
 {% endblock %}

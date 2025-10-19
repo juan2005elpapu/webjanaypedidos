@@ -84,7 +84,6 @@
         function markWidgetReady(scriptUrl) {
             widgetReady = true;
             loadedScriptUrl = scriptUrl;
-            console.info('Script de Wompi cargado correctamente:', scriptUrl);
         }
 
         function loadWompiScript(index) {
@@ -93,12 +92,10 @@
             }
 
             if (!Array.isArray(wompiScriptSources) || wompiScriptSources.length === 0) {
-                console.error('No se configuraron URLs del widget de Wompi.');
                 return;
             }
 
             if (index >= wompiScriptSources.length) {
-                console.error('No fue posible cargar el script del widget de Wompi.');
                 return;
             }
 
@@ -110,7 +107,6 @@
                 markWidgetReady(scriptUrl);
             };
             scriptTag.onerror = function() {
-                console.warn('Fallo al cargar el script de Wompi:', scriptUrl);
                 loadWompiScript(index + 1);
             };
             document.head.appendChild(scriptTag);
@@ -135,16 +131,13 @@
             customerPhoneRaw: {% if customer_phone_raw %}'{{ customer_phone_raw|escapejs }}'{% else %}null{% endif %}
         };
 
-        console.log('Wompi checkout data', wompiConfig);
-
         payButton.addEventListener('click', function(event) {
             event.preventDefault();
 
             try {
                 if (typeof WidgetCheckout === 'undefined') {
-                    const message = 'WidgetCheckout no está disponible. Verifica que el script de Wompi cargó correctamente.';
-                    console.error(message, { loadedScriptUrl });
-                    throw new Error(message);
+                    alert('No fue posible cargar el módulo de pago de Wompi. Intenta nuevamente.');
+                    return;
                 }
 
                 const checkoutOptions = {
@@ -176,12 +169,6 @@
                 if (wompiConfig.customerPhone && wompiConfig.customerPhonePrefix) {
                     customerData.phoneNumber = wompiConfig.customerPhone;
                     customerData.phoneNumberPrefix = wompiConfig.customerPhonePrefix;
-                } else if (wompiConfig.customerPhoneRaw) {
-                    console.warn('No se pudo derivar un prefijo válido para el teléfono del cliente.', {
-                        raw: wompiConfig.customerPhoneRaw,
-                        normalized: wompiConfig.customerPhone,
-                        prefix: wompiConfig.customerPhonePrefix,
-                    });
                 }
 
                 if (Object.keys(customerData).length > 0) {
@@ -198,7 +185,7 @@
                     }
                 });
             } catch (error) {
-                console.error('Error al abrir el widget de Wompi', error);
+                alert('Ocurrió un error al abrir el widget de Wompi. Intenta nuevamente.');
             }
         });
     });
