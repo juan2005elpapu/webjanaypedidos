@@ -119,7 +119,7 @@ class ProductAdmin(ModelAdmin):
         }),
         ('Imagen', {
             'fields': ('image', 'image_preview_large'),
-            'description': 'Puedes arrastrar, pegar o subir una imagen. Cloudinary entrega el formato óptimo automáticamente.'
+            'description': 'puedes subir una imagen desde el disco duro.'
         }),
         ('Peso y contenido', {
             'fields': ('weight', 'ingredients')
