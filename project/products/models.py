@@ -3,6 +3,8 @@ from django.utils.text import slugify
 from django.core.validators import MinValueValidator
 from decimal import Decimal, ROUND_HALF_UP
 from cloudinary.models import CloudinaryField
+from django.db.models.signals import post_delete, pre_save
+from django.dispatch import receiver
 
 class Category(models.Model):
     name = models.CharField('Nombre', max_length=100)
@@ -82,6 +84,24 @@ class Product(models.Model):
         if self.image:
             return self.image.build_url(secure=True, fetch_format="auto", quality="auto")
         return ""
+
+@receiver(pre_save, sender=Product)
+def delete_replaced_image(sender, instance, **kwargs):
+    if not instance.pk:
+        return
+    try:
+        previous = Product.objects.get(pk=instance.pk)
+    except Product.DoesNotExist:
+        return
+    previous_public_id = getattr(previous.image, "public_id", None)
+    new_public_id = getattr(instance.image, "public_id", None)
+    if previous_public_id and previous_public_id != new_public_id:
+        previous.image.delete(save=False)
+
+@receiver(post_delete, sender=Product)
+def delete_product_image(sender, instance, **kwargs):
+    if instance.image:
+        instance.image.delete(save=False)
 
 
 
