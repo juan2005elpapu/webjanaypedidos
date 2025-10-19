@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from cloudinary.models import CloudinaryField
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
+from cloudinary.uploader import destroy
 
 class Category(models.Model):
     name = models.CharField('Nombre', max_length=100)
@@ -85,6 +86,14 @@ class Product(models.Model):
             return self.image.build_url(secure=True, fetch_format="auto", quality="auto")
         return ""
 
+def _delete_cloudinary_image(image_field):
+    public_id = getattr(image_field, "public_id", None)
+    if public_id:
+        try:
+            destroy(public_id, invalidate=True)
+        except Exception:
+            pass
+
 @receiver(pre_save, sender=Product)
 def delete_replaced_image(sender, instance, **kwargs):
     if not instance.pk:
@@ -93,15 +102,15 @@ def delete_replaced_image(sender, instance, **kwargs):
         previous = Product.objects.get(pk=instance.pk)
     except Product.DoesNotExist:
         return
-    previous_public_id = getattr(previous.image, "public_id", None)
-    new_public_id = getattr(instance.image, "public_id", None)
-    if previous_public_id and previous_public_id != new_public_id:
-        previous.image.delete(save=False)
+    prev_id = getattr(previous.image, "public_id", None)
+    new_id = getattr(instance.image, "public_id", None)
+    if prev_id and prev_id != new_id:
+        _delete_cloudinary_image(previous.image)
 
 @receiver(post_delete, sender=Product)
 def delete_product_image(sender, instance, **kwargs):
     if instance.image:
-        instance.image.delete(save=False)
+        _delete_cloudinary_image(instance.image)
 
 
 
