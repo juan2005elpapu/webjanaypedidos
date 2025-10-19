@@ -94,7 +94,7 @@
         </div>
 
         <div class="flex justify-end border-t border-gray-200 p-4 md:p-6">
-            {% if transaction_status == 'APPROVED' and order.payment_status == 'paid' %}
+            {% if order and order.payment_status == 'paid' %}
                 <a href="{% url 'orders:success' order.id %}" class="btn-step-continue">
                     Ver pedido confirmado
                     <span class="material-icons ml-2 text-sm">arrow_forward</span>
