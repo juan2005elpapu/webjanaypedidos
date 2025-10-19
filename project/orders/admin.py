@@ -4,7 +4,6 @@ from django.urls import reverse
 from django.utils import timezone
 from unfold.admin import ModelAdmin
 from .models import Order, OrderItem, OrderModificationRequest, BusinessSettings
-from django.contrib.admin import SimpleListFilter
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
@@ -85,27 +84,10 @@ class OrderAdmin(ModelAdmin):
             return qs
         return qs.exclude(payment_status="cancelled")
 
-class OrderIdFilter(SimpleListFilter):
-    title = 'Pedido (ID)'
-    parameter_name = 'order_id'
-
-    def lookups(self, request, model_admin):
-        ids = (
-            model_admin.model.objects.order_by('order__id')
-            .values_list('order__id', 'order__order_number')
-            .distinct()[:50]
-        )
-        return [(str(order_id), f"#{order_number} (ID {order_id})") for order_id, order_number in ids]
-
-    def queryset(self, request, queryset):
-        if self.value():
-            return queryset.filter(order__id=self.value())
-        return queryset
-
 @admin.register(OrderItem)
 class OrderItemAdmin(ModelAdmin):
     list_display = ('order_number', 'product', 'quantity', 'unit_price', 'total_price')
-    list_filter = ('order__status', 'product__category', 'order__delivery_type', OrderIdFilter)
+    list_filter = ('order__status', 'product__category', 'order__delivery_type')
     search_fields = ('order__order_number', 'order__customer_name', 'product__name')
     
     def order_number(self, obj):
