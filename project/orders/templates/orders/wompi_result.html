@@ -94,10 +94,17 @@
         </div>
 
         <div class="flex justify-end border-t border-gray-200 p-4 md:p-6">
-            <a href="{% url 'orders:success' order.id %}" class="btn-step-continue">
-                Ver pedido confirmado
-                <span class="material-icons ml-2 text-sm">arrow_forward</span>
-            </a>
+            {% if transaction_status == 'APPROVED' and order.payment_status == 'paid' %}
+                <a href="{% url 'orders:success' order.id %}" class="btn-step-continue">
+                    Ver pedido confirmado
+                    <span class="material-icons ml-2 text-sm">arrow_forward</span>
+                </a>
+            {% else %}
+                <a href="{% url 'orders:step1' %}" class="btn-step-cancel">
+                    Volver a realizar pedido
+                    <span class="material-icons ml-2 text-sm">refresh</span>
+                </a>
+            {% endif %}
         </div>
     </div>
 </div>

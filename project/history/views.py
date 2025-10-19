@@ -26,9 +26,13 @@ def order_history_list(request):
     date_to = request.GET.get('date_to', '')
     
     # ✅ USAR directamente el modelo Order existente
-    orders = Order.objects.filter(
-        user=request.user
-    ).exclude(status='draft').select_related('user').prefetch_related('items__product')
+    orders = (
+        Order.objects.filter(user=request.user)
+        .exclude(status='draft')
+        .exclude(payment_status='cancelled')
+        .select_related('user')
+        .prefetch_related('items__product')
+    )
     
     # Aplicar filtros
     if search_query:
@@ -84,9 +88,22 @@ def order_history_list(request):
     
     # ✅ USAR los métodos y campos existentes del modelo Order
     stats = {
-        'total_orders': Order.objects.filter(user=request.user).exclude(status='draft').count(),
-        'pending_orders': Order.objects.filter(user=request.user, status='pending').count(),
-        'completed_orders': Order.objects.filter(user=request.user, status='delivered').count(),
+        'total_orders': (
+            Order.objects.filter(user=request.user)
+            .exclude(status='draft')
+            .exclude(payment_status='cancelled')
+            .count()
+        ),
+        'pending_orders': Order.objects.filter(
+            user=request.user, status='pending'
+        )
+        .exclude(payment_status='cancelled')
+        .count(),
+        'completed_orders': Order.objects.filter(
+            user=request.user, status='delivered'
+        )
+        .exclude(payment_status='cancelled')
+        .count(),
     }
     
     context = {
