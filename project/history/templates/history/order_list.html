@@ -201,10 +201,16 @@
                                         </div>
                                     </td>
                                     <td class="px-4 xl:px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <a href="{% url 'history:order_detail' order.id %}" 
-                                            class="text-orange-600 hover:text-orange-900 text-xs lg:text-sm">
-                                            Ver detalles
-                                        </a>
+                                        {% if order.status == 'cancelled' %}
+                                            <span class="inline-flex items-center px-3 py-1 border border-gray-300 text-gray-400 bg-gray-100 rounded-md cursor-not-allowed text-xs lg:text-sm">
+                                                Ver detalles
+                                            </span>
+                                        {% else %}
+                                            <a href="{% url 'history:order_detail' order.id %}"
+                                               class="text-orange-600 hover:text-orange-900 text-xs lg:text-sm">
+                                                Ver detalles
+                                            </a>
+                                        {% endif %}
                                     </td>
                                 </tr>
                             {% endfor %}
@@ -299,12 +305,19 @@
                                     {% endif %}
                                     <span class="{% if order.status == 'cancelled' %}text-gray-400{% else %}text-gray-500{% endif %}">{{ order.desired_date|date:"d/m" }} {{ order.desired_time|time:"H:i" }}</span>
                                 </div>
-                                <a href="{% url 'history:order_detail' order.id %}" 
-                                    class="inline-flex items-center px-2 md:px-3 py-1 border border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-md text-xs font-medium">
-                                    <span class="material-icons text-sm mr-1">add</span>
-                                    <span class="hidden sm:inline">Ver detalles</span>
-                                    <span class="sm:hidden">Ver</span>
-                                </a>
+                                {% if order.status == 'cancelled' %}
+                                    <span class="inline-flex items-center px-2 md:px-3 py-1 border border-gray-300 text-gray-400 bg-gray-100 rounded-md text-xs font-medium cursor-not-allowed">
+                                        <span class="material-icons text-sm mr-1">block</span>
+                                        Ver
+                                    </span>
+                                {% else %}
+                                    <a href="{% url 'history:order_detail' order.id %}"
+                                       class="inline-flex items-center px-2 md:px-3 py-1 border border-orange-300 text-orange-700 bg-orange-50 hover:bg-orange-100 rounded-md text-xs font-medium">
+                                        <span class="material-icons text-sm mr-1">add</span>
+                                        <span class="hidden sm:inline">Ver detalles</span>
+                                        <span class="sm:hidden">Ver</span>
+                                    </a>
+                                {% endif %}
                             </div>
                         </div>
                     {% endfor %}
