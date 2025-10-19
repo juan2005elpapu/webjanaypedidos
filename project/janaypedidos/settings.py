@@ -174,16 +174,17 @@ AUTHENTICATION_BACKENDS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# Cloudinary configuration (para archivos multimedia en producción)
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
+cloudinary_url = os.environ.get('CLOUDINARY_URL')
 
-# Usar Cloudinary en producción
-if not DEBUG and os.environ.get('CLOUDINARY_CLOUD_NAME'):
+if cloudinary_url:
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_ROOT = ''
+    CLOUDINARY_STORAGE = {
+        'CLOUDINARY_URL': cloudinary_url,
+        'SECURE': True,
+    }
+else:
+    CLOUDINARY_STORAGE = {}
 
 # Security settings para producción
 if not DEBUG:
