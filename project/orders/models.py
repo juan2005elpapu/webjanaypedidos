@@ -40,6 +40,7 @@ class Order(models.Model):
         ('transfer', 'Transferencia'),
         ('card', 'Tarjeta'),
         ('pse', 'PSE'),
+        ('wompi', 'Wompi'),
         ('pay_later', 'Pagar después'),
     ]
     
@@ -77,6 +78,12 @@ class Order(models.Model):
     # Información de pago
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS, default='pending', verbose_name='Estado del pago')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD, blank=True, verbose_name='Método de pago')
+    payment_reference = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Referencia de pago',
+        help_text='Identificador de la transacción en la pasarela de pago'
+    )
     
     # Notas y comentarios
     notes = models.TextField(blank=True, verbose_name='Notas del cliente')
@@ -340,9 +347,32 @@ class BusinessSettings(models.Model):
     
     # Configuraciones de pago
     accept_cash = models.BooleanField(default=True, verbose_name='Acepta efectivo')
-    accept_transfer = models.BooleanField(default=True, verbose_name='Acepta transferencia')
-    accept_card = models.BooleanField(default=True, verbose_name='Acepta tarjeta')
-    accept_pse = models.BooleanField(default=False, verbose_name='Acepta PSE')
+    accept_wompi = models.BooleanField(default=True, verbose_name='Aceptar pagos con Wompi')
+
+    wompi_public_key = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Llave pública Wompi',
+        help_text='Llave pública provista por Wompi (pub_test_xxx o pub_prod_xxx)'
+    )
+    wompi_private_key = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Llave privada Wompi',
+        help_text='Llave privada provista por Wompi para consultar transacciones'
+    )
+    wompi_integrity_key = models.CharField(
+        max_length=120,
+        blank=True,
+        verbose_name='Llave de integridad Wompi',
+        help_text='Llave usada para firmar los pagos iniciados desde el widget de Wompi'
+    )
+    wompi_environment = models.CharField(
+        max_length=20,
+        choices=[('test', 'Sandbox/Pruebas'), ('production', 'Producción')],
+        default='test',
+        verbose_name='Entorno de Wompi'
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -369,6 +399,7 @@ class BusinessSettings(models.Model):
                 department='Casanare',
                 delivery_cost=Decimal('5000'),
                 modification_time_limit_hours=4,  # ✅ AGREGAR valores por defecto
-                cancellation_time_limit_days=1
+                cancellation_time_limit_days=1,
+                accept_wompi=True,
             )
         return settings
