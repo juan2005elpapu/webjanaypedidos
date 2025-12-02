@@ -204,6 +204,14 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    # Excluir localhost del redirect SSL
+    SECURE_REDIRECT_EXEMPT = [r'^(?!admin).*$'] if os.environ.get('DYNO') is None else []
+else:
+    # Asegurar que en DEBUG no se aplique nada de SSL
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
+    SECURE_HSTS_SECONDS = 0
 
 # Configuración de Unfold
 UNFOLD = {
