@@ -30,12 +30,14 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = [
     'localhost', '127.0.0.1',
     'janaypedidos-55029af11574.herokuapp.com',
+    'janaypedidos.herokuapp.com',
     'janaypedidos.page', 'www.janaypedidos.page',
 ]
 CSRF_TRUSTED_ORIGINS = [
     'https://janaypedidos.page',
     'https://www.janaypedidos.page',
     'https://janaypedidos-55029af11574.herokuapp.com',
+    'https://janaypedidos.herokuapp.com',
 ]
 
 # Application definition
