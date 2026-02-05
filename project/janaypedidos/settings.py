@@ -51,8 +51,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'cloudinary_storage',
-    'cloudinary',
     'tailwind',
     'theme',
     'django_browser_reload',
@@ -61,6 +59,7 @@ INSTALLED_APPS = [
     'orders',
     'history',
     'core',
+    'products.supabase_storage',
 ]
 
 MIDDLEWARE = [
@@ -183,17 +182,19 @@ AUTHENTICATION_BACKENDS = [
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-cloudinary_url = os.environ.get('CLOUDINARY_URL')
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY')
+SUPABASE_BUCKET = os.environ.get('SUPABASE_BUCKET', 'products')
 
-if cloudinary_url:
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_ROOT = ''
-    CLOUDINARY_STORAGE = {
-        'CLOUDINARY_URL': cloudinary_url,
-        'SECURE': True,
-    }
-else:
-    CLOUDINARY_STORAGE = {}
+SUPABASE_STORAGE = {
+    "url": SUPABASE_URL,
+    "service_role_key": SUPABASE_SERVICE_ROLE_KEY,
+    "bucket": SUPABASE_BUCKET,
+    "base_path": "products",
+}
+
+if SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY:
+    DEFAULT_FILE_STORAGE = "products.supabase_storage.SupabaseStorage"
 
 # Security settings para producción
 if not DEBUG:

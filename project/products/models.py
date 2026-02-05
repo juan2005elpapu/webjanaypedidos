@@ -2,10 +2,11 @@ from django.db import models
 from django.utils.text import slugify
 from django.core.validators import MinValueValidator
 from decimal import Decimal, ROUND_HALF_UP
-from cloudinary.models import CloudinaryField
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
-from cloudinary.uploader import destroy
+from .supabase_storage import SupabaseStorage
+
+storage = SupabaseStorage()
 
 class Category(models.Model):
     name = models.CharField('Nombre', max_length=100)
@@ -40,14 +41,10 @@ class Product(models.Model):
         related_name='products',
         verbose_name="Categoría"
     )
-    image = CloudinaryField(
-        "product_image",
+    image = models.FileField(
+        upload_to='products/',
         blank=True,
-        null=True,
-        overwrite=True,
-        resource_type="image",
-        transformation={"fetch_format": "auto", "quality": "auto"},
-        folder="products"
+        null=True
     )
     is_available = models.BooleanField(default=True, verbose_name="Disponible")
     weight = models.PositiveIntegerField(
@@ -82,17 +79,11 @@ class Product(models.Model):
         return f"${self.price:,.0f}"
 
     def image_secure_url(self):
-        if self.image:
-            return self.image.build_url(secure=True, fetch_format="auto", quality="auto")
-        return ""
+        return self.image.url if self.image else ""
 
-def _delete_cloudinary_image(image_field):
-    public_id = getattr(image_field, "public_id", None)
-    if public_id:
-        try:
-            destroy(public_id, invalidate=True)
-        except Exception:
-            pass
+def _delete_supabase_image(image_field):
+    if image_field and image_field.name:
+        storage.delete(image_field.name)
 
 @receiver(pre_save, sender=Product)
 def delete_replaced_image(sender, instance, **kwargs):
@@ -102,15 +93,14 @@ def delete_replaced_image(sender, instance, **kwargs):
         previous = Product.objects.get(pk=instance.pk)
     except Product.DoesNotExist:
         return
-    prev_id = getattr(previous.image, "public_id", None)
-    new_id = getattr(instance.image, "public_id", None)
-    if prev_id and prev_id != new_id:
-        _delete_cloudinary_image(previous.image)
+    prev_name = previous.image.name if previous.image else ""
+    new_name = instance.image.name if instance.image else ""
+    if prev_name and prev_name != new_name:
+        _delete_supabase_image(previous.image)
 
 @receiver(post_delete, sender=Product)
 def delete_product_image(sender, instance, **kwargs):
-    if instance.image:
-        _delete_cloudinary_image(instance.image)
+    _delete_supabase_image(instance.image)
 
 
 

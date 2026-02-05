@@ -68,7 +68,7 @@ def duplicate_products(modeladmin, request, queryset):
     # Mostrar mensajes de resultado
     if duplicated_count > 0:
         if duplicated_count == 1:
-            messages.success(request, f'Se duplicó 1 producto exitosamente.')
+            messages.success(request, 'Se duplicó 1 producto exitosamente.')
         else:
             messages.success(request, f'Se duplicaron {duplicated_count} productos exitosamente.')
     
