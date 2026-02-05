@@ -6,48 +6,41 @@ from unfold.admin import ModelAdmin as UnfoldModelAdmin
 from .models import Product, Category
 from .supabase_storage import SupabaseStorage
 
-storage = SupabaseStorage()
-
 
 class ProductForm(forms.ModelForm):
-    image = forms.FileField(required=False, widget=forms.ClearableFileInput)
+    image_file = forms.FileField(required=False, label="Subir imagen")
     clear_image = forms.BooleanField(required=False, label="Eliminar imagen")
 
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = ['name', 'description', 'price', 'weight', 'category', 'is_available', 'ingredients']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk and self.instance.image:
-            self.fields['clear_image'].help_text = f"Imagen actual: {self.instance.image.name}"
+            self.fields['clear_image'].help_text = f"Imagen actual: {self.instance.image}"
         else:
             self.fields['clear_image'].widget = forms.HiddenInput()
 
     def save(self, commit=True):
         instance = super().save(commit=False)
+        storage = SupabaseStorage()
         
+        # Eliminar imagen si se marcó clear_image
         if self.cleaned_data.get('clear_image'):
-            if instance.pk:
-                try:
-                    old_instance = Product.objects.get(pk=instance.pk)
-                    if old_instance.image:
-                        storage.delete(old_instance.image.name)
-                except Product.DoesNotExist:
-                    pass
+            if instance.image:
+                storage.delete(instance.image)
             instance.image = None
         
-        elif self.cleaned_data.get('image') and hasattr(self.cleaned_data['image'], 'read'):
-            uploaded_file = self.cleaned_data['image']
+        # Subir nueva imagen si se proporcionó
+        elif self.cleaned_data.get('image_file'):
+            uploaded_file = self.cleaned_data['image_file']
             
-            if instance.pk:
-                try:
-                    old_instance = Product.objects.get(pk=instance.pk)
-                    if old_instance.image:
-                        storage.delete(old_instance.image.name)
-                except Product.DoesNotExist:
-                    pass
+            # Eliminar imagen anterior si existe
+            if instance.image:
+                storage.delete(instance.image)
             
+            # Subir nueva imagen a Supabase
             new_key = storage._save(uploaded_file.name, uploaded_file)
             instance.image = new_key
         
@@ -57,9 +50,10 @@ class ProductForm(forms.ModelForm):
         return instance
 
 
-def duplicate_products(UnfoldModelAdmin, request, queryset):
+def duplicate_products(_modeladmin, request, queryset):
     duplicated_count = 0
     errors = []
+    storage = SupabaseStorage()
     
     for original_product in queryset:
         try:
@@ -73,9 +67,10 @@ def duplicate_products(UnfoldModelAdmin, request, queryset):
                 ingredients=original_product.ingredients,
             )
             
-            if original_product.image and original_product.image.name:
+            # Duplicar imagen si existe
+            if original_product.image:
                 try:
-                    new_key = storage.copy(original_product.image.name)
+                    new_key = storage.copy(original_product.image)
                     duplicated_product.image = new_key
                 except Exception as img_error:
                     errors.append(f'Imagen no duplicada para "{original_product.name}": {str(img_error)}')
@@ -95,9 +90,6 @@ def duplicate_products(UnfoldModelAdmin, request, queryset):
     if errors:
         for error in errors:
             messages.warning(request, error)
-    
-    if duplicated_count == 0 and not errors:
-        messages.error(request, 'No se pudo duplicar ningún producto.')
 
 duplicate_products.short_description = "Duplicar productos seleccionados"
 
@@ -134,10 +126,9 @@ class ProductAdmin(UnfoldModelAdmin):
         }),
         ('Precio y Disponibilidad', {
             'fields': ('price', 'is_available'),
-            'description': 'El precio se guardará sin decimales automáticamente'
         }),
         ('Imagen', {
-            'fields': ('image', 'clear_image', 'image_preview_large'),
+            'fields': ('image_file', 'clear_image', 'image_preview_large'),
             'description': 'Sube una imagen o marca "Eliminar imagen" para borrarla.'
         }),
         ('Peso y contenido', {
@@ -157,7 +148,7 @@ class ProductAdmin(UnfoldModelAdmin):
     name_link.admin_order_field = 'name'
     
     def image_preview(self, obj):
-        url = obj.image_secure_url() if obj.image else ""
+        url = obj.image_secure_url()
         if url:
             return format_html(
                 '<img src="{}" alt="{}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">',
@@ -165,12 +156,12 @@ class ProductAdmin(UnfoldModelAdmin):
                 obj.name
             )
         return format_html(
-            '<div style="width: 50px; height: 50px; background-color: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 12px;">Sin imagen</div>'
+            '<div style="width: 50px; height: 50px; background-color: #f3f4f6; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #9ca3af; font-size: 10px;">Sin img</div>'
         )
-    image_preview.short_description = 'Imagen'
+    image_preview.short_description = 'Img'
     
     def image_preview_large(self, obj):
-        url = obj.image_secure_url() if obj.image else ""
+        url = obj.image_secure_url()
         if url:
             return format_html(
                 '''
@@ -178,13 +169,13 @@ class ProductAdmin(UnfoldModelAdmin):
                     <img src="{}" alt="{}" style="max-width: 300px; max-height: 300px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <p style="margin-top: 8px; font-size: 12px; color: #6b7280;">
                         <strong>Archivo:</strong> {}<br>
-                        <strong>URL:</strong> <a href="{}" target="_blank">Ver imagen</a>
+                        <a href="{}" target="_blank">Ver imagen completa</a>
                     </p>
                 </div>
                 ''',
                 url,
                 obj.name,
-                obj.image.name if obj.image else "",
+                obj.image or "",
                 url
             )
         return format_html(

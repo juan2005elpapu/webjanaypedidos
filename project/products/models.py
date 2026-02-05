@@ -2,11 +2,9 @@ from django.db import models
 from django.utils.text import slugify
 from django.core.validators import MinValueValidator
 from decimal import Decimal, ROUND_HALF_UP
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import post_delete
 from django.dispatch import receiver
-from .supabase_storage import SupabaseStorage
-
-storage = SupabaseStorage()
+from django.conf import settings
 
 class Category(models.Model):
     name = models.CharField('Nombre', max_length=100)
@@ -25,6 +23,7 @@ class Category(models.Model):
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
+
 class Product(models.Model):
     name = models.CharField('Nombre', max_length=200)
     description = models.TextField('Descripción', blank=True)
@@ -41,8 +40,9 @@ class Product(models.Model):
         related_name='products',
         verbose_name="Categoría"
     )
-    image = models.FileField(
-        upload_to='products/',
+    image = models.CharField(
+        'Imagen',
+        max_length=500,
         blank=True,
         null=True
     )
@@ -79,28 +79,20 @@ class Product(models.Model):
         return f"${self.price:,.0f}"
 
     def image_secure_url(self):
-        return self.image.url if self.image else ""
+        if self.image:
+            return f"{settings.SUPABASE_URL}/storage/v1/object/public/{settings.SUPABASE_BUCKET}/{self.image}"
+        return ""
 
-def _delete_supabase_image(image_field):
-    if image_field and image_field.name:
-        storage.delete(image_field.name)
-
-@receiver(pre_save, sender=Product)
-def delete_replaced_image(sender, instance, **kwargs):
-    if not instance.pk:
-        return
-    try:
-        previous = Product.objects.get(pk=instance.pk)
-    except Product.DoesNotExist:
-        return
-    prev_name = previous.image.name if previous.image else ""
-    new_name = instance.image.name if instance.image else ""
-    if prev_name and prev_name != new_name:
-        _delete_supabase_image(previous.image)
 
 @receiver(post_delete, sender=Product)
 def delete_product_image(sender, instance, **kwargs):
-    _delete_supabase_image(instance.image)
+    if instance.image:
+        try:
+            from .supabase_storage import SupabaseStorage
+            storage = SupabaseStorage()
+            storage.delete(instance.image)
+        except Exception:
+            pass
 
 
 
