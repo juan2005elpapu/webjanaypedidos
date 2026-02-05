@@ -167,9 +167,9 @@ class ProductAdmin(UnfoldModelAdmin):
                 '''
                 <div style="margin-top: 10px;">
                     <img src="{}" alt="{}" style="max-width: 300px; max-height: 300px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <p style="margin-top: 8px; font-size: 12px; color: #6b7280;">
-                        <strong>Archivo:</strong> {}<br>
-                        <a href="{}" target="_blank">Ver imagen completa</a>
+                    <p style="margin-top: 8px; font-size: 12px; color: #e5e7eb;">
+                        <strong style="color:#f9fafb;">Archivo:</strong> <span style="color:#d1d5db;">{}</span><br>
+                        <a href="{}" target="_blank" style="color:#93c5fd; text-decoration: underline;">Ver imagen completa</a>
                     </p>
                 </div>
                 ''',
@@ -179,6 +179,6 @@ class ProductAdmin(UnfoldModelAdmin):
                 url
             )
         return format_html(
-            '<div style="padding: 20px; background-color: #f9fafb; border-radius: 8px; text-align: center; color: #6b7280;">No hay imagen cargada</div>'
+            '<div style="padding: 20px; background-color: #111827; border-radius: 8px; text-align: center; color: #e5e7eb;">No hay imagen cargada</div>'
         )
     image_preview_large.short_description = 'Vista previa'
