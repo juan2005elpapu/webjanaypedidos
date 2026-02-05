@@ -2,51 +2,85 @@ from django import forms
 from django.contrib import admin, messages
 from django.urls import reverse
 from django.utils.html import format_html
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin as UnfoldModelAdmin
 from .models import Product, Category
 from .supabase_storage import SupabaseStorage
 
 storage = SupabaseStorage()
 
+
 class ProductForm(forms.ModelForm):
-    image = forms.FileField(required=False)
+    image = forms.FileField(required=False, widget=forms.ClearableFileInput)
+    clear_image = forms.BooleanField(required=False, label="Eliminar imagen")
 
     class Meta:
         model = Product
         fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk and self.instance.image:
+            self.fields['clear_image'].help_text = f"Imagen actual: {self.instance.image.name}"
+        else:
+            self.fields['clear_image'].widget = forms.HiddenInput()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
         
-    def clean_image(self):
-        image = self.cleaned_data.get('image')
-        if image is False:
-            return None
-        return image
+        if self.cleaned_data.get('clear_image'):
+            if instance.pk:
+                try:
+                    old_instance = Product.objects.get(pk=instance.pk)
+                    if old_instance.image:
+                        storage.delete(old_instance.image.name)
+                except Product.DoesNotExist:
+                    pass
+            instance.image = None
+        
+        elif self.cleaned_data.get('image') and hasattr(self.cleaned_data['image'], 'read'):
+            uploaded_file = self.cleaned_data['image']
+            
+            if instance.pk:
+                try:
+                    old_instance = Product.objects.get(pk=instance.pk)
+                    if old_instance.image:
+                        storage.delete(old_instance.image.name)
+                except Product.DoesNotExist:
+                    pass
+            
+            new_key = storage._save(uploaded_file.name, uploaded_file)
+            instance.image = new_key
+        
+        if commit:
+            instance.save()
+        
+        return instance
 
 
-def duplicate_products(modeladmin, request, queryset):
-    """Action para duplicar productos seleccionados en el admin"""
+def duplicate_products(UnfoldModelAdmin, request, queryset):
     duplicated_count = 0
     errors = []
     
     for original_product in queryset:
         try:
-            original_data = {
-                'name': f"{original_product.name} (Copia)",
-                'description': original_product.description,
-                'price': original_product.price,
-                'weight': original_product.weight,
-                'category': original_product.category,
-                'is_available': original_product.is_available,
-                'ingredients': original_product.ingredients,
-            }
+            duplicated_product = Product(
+                name=f"{original_product.name} (Copia)",
+                description=original_product.description,
+                price=original_product.price,
+                weight=original_product.weight,
+                category=original_product.category,
+                is_available=original_product.is_available,
+                ingredients=original_product.ingredients,
+            )
             
-            duplicated_product = Product(**original_data)
+            if original_product.image and original_product.image.name:
+                try:
+                    new_key = storage.copy(original_product.image.name)
+                    duplicated_product.image = new_key
+                except Exception as img_error:
+                    errors.append(f'Imagen no duplicada para "{original_product.name}": {str(img_error)}')
+            
             duplicated_product.save()
-            
-            if original_product.image:
-                new_key = storage.copy(original_product.image.name)
-                duplicated_product.image.name = new_key
-                duplicated_product.save(update_fields=["image"])
-            
             duplicated_count += 1
             
         except Exception as e:
@@ -69,7 +103,7 @@ duplicate_products.short_description = "Duplicar productos seleccionados"
 
 
 @admin.register(Category)
-class CategoryAdmin(ModelAdmin):
+class CategoryAdmin(UnfoldModelAdmin):
     list_display = ('name', 'slug', 'products_count')
     prepopulated_fields = {'slug': ('name',)}
     search_fields = ('name',)
@@ -85,7 +119,7 @@ class CategoryAdmin(ModelAdmin):
 
 
 @admin.register(Product)
-class ProductAdmin(ModelAdmin):
+class ProductAdmin(UnfoldModelAdmin):
     form = ProductForm
     list_display = ['image_preview', 'name_link', 'price', 'weight', 'category', 'is_available']
     list_filter = ['category', 'is_available', 'created_at']
@@ -103,8 +137,8 @@ class ProductAdmin(ModelAdmin):
             'description': 'El precio se guardará sin decimales automáticamente'
         }),
         ('Imagen', {
-            'fields': ('image', 'image_preview_large'),
-            'description': 'Puedes subir una imagen desde el disco duro.'
+            'fields': ('image', 'clear_image', 'image_preview_large'),
+            'description': 'Sube una imagen o marca "Eliminar imagen" para borrarla.'
         }),
         ('Peso y contenido', {
             'fields': ('weight', 'ingredients')
@@ -144,14 +178,13 @@ class ProductAdmin(ModelAdmin):
                     <img src="{}" alt="{}" style="max-width: 300px; max-height: 300px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <p style="margin-top: 8px; font-size: 12px; color: #6b7280;">
                         <strong>Archivo:</strong> {}<br>
-                        <strong>URL:</strong> <a href="{}" target="_blank">{}</a>
+                        <strong>URL:</strong> <a href="{}" target="_blank">Ver imagen</a>
                     </p>
                 </div>
                 ''',
                 url,
                 obj.name,
                 obj.image.name if obj.image else "",
-                url,
                 url
             )
         return format_html(
