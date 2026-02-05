@@ -59,7 +59,6 @@ INSTALLED_APPS = [
     'orders',
     'history',
     'core',
-    'products.supabase_storage',
 ]
 
 MIDDLEWARE = [
