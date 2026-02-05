@@ -333,7 +333,10 @@ UNFOLD = {
     },
     
     # Personalización de UI
-    "ENVIRONMENT": ["DESARROLLO", "primary"],  # Cambia a "development" si es necesario
+    "ENVIRONMENT": [
+        os.environ.get("UNFOLD_ENVIRONMENT", "DESARROLLO"),
+        "primary",
+    ],
     "BORDER_RADIUS": "6px",
     "DARK_MODE": True,  # Activar modo oscuro
     
